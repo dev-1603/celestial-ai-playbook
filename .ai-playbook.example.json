@@ -1,0 +1,10 @@
+{
+  "$comment": "Project-specific overlay config. Place as .ai-playbook.json in each repo root.",
+  "architecture": [
+    "control-plane",
+    "core-ecosystem"
+  ],
+  "domain": null,
+  "activeRole": "backend",
+  "outputTargets": [".cursorrules"]
+}

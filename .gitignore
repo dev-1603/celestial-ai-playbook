@@ -1,0 +1,28 @@
+# Node.js standard ignores
+node_modules/
+*.log
+
+# OS generated files
+.DS_Store
+
+# Temporary local scripts used during development
+fix-cli.js
+populate.mjs
+scaffold.mjs
+test-load.mjs
+
+# Temporary export and test directories
+.tmp
+.tmp/
+.tmp-*/
+test-export/
+test-rules/
+
+# Local project config (use .ai-playbook.example.json for git)
+.ai-playbook.json
+
+# Accidental local IDE exports from running export-roles in this repo
+/.cursor/
+/.claude/
+/.agent/
+/.github/prompts/

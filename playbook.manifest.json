@@ -1,0 +1,246 @@
+{
+  "$schema": "./playbook.manifest.schema.json",
+  "version": "3.0.0",
+  "taxonomy": {
+    "rule": {
+      "cursorTarget": ".cursor/rules/*.mdc",
+      "scope": "Persistent standards — always-on, file-scoped, or intelligently applied",
+      "when": "Constraints on HOW code is written (languages, frameworks, patterns, base policy)"
+    },
+    "skill": {
+      "cursorTarget": "~/.cursor/skills/<name>/SKILL.md",
+      "scope": "Global, on-demand deep workflows",
+      "when": "Methodologies the agent loads when a task matches (observability, performance, DDD, threat modeling)"
+    },
+    "command": {
+      "cursorTarget": "~/.cursor/commands/*.md or .cursor/commands/*.md",
+      "claudeTarget": ".claude/commands/*.md",
+      "copilotTarget": ".github/prompts/*.prompt.md",
+      "antigravityTarget": ".agent/presets/*.md (experimental)",
+      "scope": "Role personas exported from src/roles/*.md",
+      "when": "Persona switches and repeatable workflows (backend, PR review, architect)"
+    }
+  },
+  "layers": {
+    "1-base": "src/base — global rules (always apply)",
+    "2-domain": "future — industry overlays",
+    "3-product": "src/architecture — project-only context",
+    "4-tenant": "future — client overlays",
+    "5-environment": "future — prod/staging overlays",
+    "6-task": "src/roles, src/skills — commands and skills"
+  },
+  "components": {
+    "base/global-rules": {
+      "type": "rule",
+      "alwaysApply": true,
+      "description": "Celestial global base policy — domain-neutral engineering standards, WCAG, SonarQube gates, layering rules"
+    },
+
+    "languages/typescript": {
+      "type": "rule",
+      "globs": "**/*.{ts,tsx}",
+      "description": "TypeScript language standards from Celestial Playbook"
+    },
+    "languages/javascript": {
+      "type": "rule",
+      "globs": "**/*.{js,jsx,mjs,cjs}",
+      "description": "JavaScript language standards from Celestial Playbook"
+    },
+    "languages/python-core": {
+      "type": "rule",
+      "globs": "**/*.py",
+      "description": "Python language standards from Celestial Playbook"
+    },
+    "languages/go-core": {
+      "type": "rule",
+      "globs": "**/*.go",
+      "description": "Go language standards from Celestial Playbook"
+    },
+
+    "frameworks/nestjs": {
+      "type": "rule",
+      "globs": "**/*.{ts,tsx}",
+      "description": "NestJS framework conventions — modules, guards, DTOs, tenant scoping"
+    },
+    "frameworks/node-express": {
+      "type": "rule",
+      "globs": "**/*.{js,ts}",
+      "description": "Node Express framework conventions from Celestial Playbook"
+    },
+    "frameworks/react-next": {
+      "type": "rule",
+      "globs": "**/*.{tsx,jsx}",
+      "description": "React and Next.js conventions from Celestial Playbook"
+    },
+    "frameworks/vue-nuxt": {
+      "type": "rule",
+      "globs": "**/*.{vue,ts}",
+      "description": "Vue and Nuxt conventions from Celestial Playbook"
+    },
+    "frameworks/sveltekit": {
+      "type": "rule",
+      "globs": "**/*.{svelte,ts}",
+      "description": "SvelteKit conventions from Celestial Playbook"
+    },
+    "frameworks/styling-system": {
+      "type": "rule",
+      "globs": "**/*.{css,scss,tsx,jsx,vue,svelte}",
+      "description": "Styling system and design token conventions"
+    },
+    "frameworks/data-engineering": {
+      "type": "rule",
+      "description": "Data engineering framework standards — pipelines, ETL, batch and streaming"
+    },
+    "frameworks/ai-ml-engineering": {
+      "type": "rule",
+      "description": "AI/ML engineering framework standards — training, inference, evaluation"
+    },
+
+    "design-patterns/api-design": {
+      "type": "rule",
+      "description": "API design patterns — REST contracts, versioning, tenant-scoped endpoints"
+    },
+    "design-patterns/data-consistency": {
+      "type": "rule",
+      "description": "Data consistency patterns — saga, outbox, event sourcing, idempotency"
+    },
+    "design-patterns/deployment": {
+      "type": "rule",
+      "description": "Deployment patterns — blue/green, rolling, rollback, zero-downtime"
+    },
+    "design-patterns/event-driven": {
+      "type": "rule",
+      "description": "Event-driven architecture patterns — pub/sub, CDC, event contracts"
+    },
+    "design-patterns/resiliency": {
+      "type": "rule",
+      "description": "Resiliency patterns — circuit breakers, retries, bulkheads, timeouts"
+    },
+
+    "data-layers/sql": {
+      "type": "rule",
+      "globs": "**/*.{sql,prisma}",
+      "description": "SQL and relational data layer standards — migrations, RLS, indexing"
+    },
+    "data-layers/nosql": {
+      "type": "rule",
+      "description": "NoSQL data layer standards — document stores, key design, tenant isolation"
+    },
+    "data-layers/graph": {
+      "type": "rule",
+      "description": "Graph data layer standards — node/edge modeling, traversal, isolation"
+    },
+
+    "cloud-ai/ai-safety": {
+      "type": "rule",
+      "description": "AI safety standards — prompt injection, output filtering, PII in LLM context"
+    },
+    "cloud-ai/orchestration": {
+      "type": "rule",
+      "description": "AI orchestration standards — agent chains, tool use, observability"
+    },
+    "cloud-ai/infrastructure": {
+      "type": "rule",
+      "description": "Cloud AI infrastructure — GPU scheduling, model serving, cost controls"
+    },
+
+    "architecture/control-plane": {
+      "type": "rule",
+      "scope": "project",
+      "description": "Celestial Auth Control Plane architecture — IDP, PDP, gateway flow"
+    },
+    "architecture/core-ecosystem": {
+      "type": "rule",
+      "scope": "project",
+      "description": "Celestial core ecosystem architecture context"
+    },
+    "architecture/carecaddy": {
+      "type": "rule",
+      "scope": "project",
+      "description": "CareCaddy product overlay — healthcare vertical constraints"
+    },
+
+    "skills/observability": {
+      "type": "skill",
+      "description": "Implements observability — structured logging, tracing, metrics, alerting, SLOs. Use when building or debugging monitoring, logs, traces, or on-call workflows."
+    },
+    "skills/performance-tuning": {
+      "type": "skill",
+      "description": "Diagnoses and fixes performance issues — N+1 queries, caching, latency, throughput. Use when optimizing slow code, databases, or APIs."
+    },
+    "skills/threat-modeling": {
+      "type": "skill",
+      "description": "Runs STRIDE-style threat modeling and security analysis. Use when designing features, reviewing security, or assessing attack surface."
+    },
+    "skills/domain-driven-design": {
+      "type": "skill",
+      "description": "Applies DDD — bounded contexts, aggregates, domain events, ubiquitous language. Use when modeling domains or refactoring service boundaries."
+    },
+
+    "roles/backend": {
+      "type": "command",
+      "command": "celestial-backend",
+      "title": "Backend Developer"
+    },
+    "roles/frontend": {
+      "type": "command",
+      "command": "celestial-frontend",
+      "title": "Frontend Developer"
+    },
+    "roles/devops": {
+      "type": "command",
+      "command": "celestial-devops",
+      "title": "DevOps Engineer"
+    },
+    "roles/dba": {
+      "type": "command",
+      "command": "celestial-dba",
+      "title": "Database Administrator"
+    },
+    "roles/qa": {
+      "type": "command",
+      "command": "celestial-qa",
+      "title": "QA Engineer"
+    },
+    "roles/pr-reviewer": {
+      "type": "command",
+      "command": "celestial-review-pr",
+      "title": "PR Review"
+    },
+    "roles/system-architect": {
+      "type": "command",
+      "command": "celestial-architect",
+      "title": "System Architect"
+    },
+    "roles/go-engineer": {
+      "type": "command",
+      "command": "celestial-go",
+      "title": "Go Engineer"
+    },
+    "roles/integration": {
+      "type": "command",
+      "command": "celestial-integration",
+      "title": "Integration Engineer"
+    },
+    "roles/data-engineer": {
+      "type": "command",
+      "command": "celestial-data-engineer",
+      "title": "Data Engineer"
+    },
+    "roles/ai-ml-specialist": {
+      "type": "command",
+      "command": "celestial-ai-ml",
+      "title": "AI/ML Specialist"
+    },
+    "roles/ui-ux": {
+      "type": "command",
+      "command": "celestial-ui-ux",
+      "title": "UI/UX Designer"
+    },
+    "roles/end-user": {
+      "type": "command",
+      "command": "celestial-end-user",
+      "title": "End User Advocate"
+    }
+  }
+}

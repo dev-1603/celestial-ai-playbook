@@ -1,0 +1,31 @@
+{
+  "name": "celestial-ai-playbook",
+  "version": "2.0.0",
+  "description": "Domain-neutral AI context orchestrator for the Celestial Platform",
+  "type": "module",
+  "bin": {
+    "ai-playbook": "./bin/ai-playbook"
+  },
+  "scripts": {
+    "start": "node bin/ai-playbook",
+    "install": "node scripts/install-cursor.mjs global",
+    "sync": "node scripts/install-cursor.mjs sync",
+    "install-all-ides": "node scripts/install-all-ides.mjs all",
+    "export-roles": "node scripts/export-roles.mjs all",
+    "verify-roles": "node scripts/verify-role-exports.mjs",
+    "verify-frontmatter": "node scripts/verify-frontmatter.mjs"
+  },
+  "dependencies": {
+    "commander": "^11.1.0"
+  },
+  "keywords": [
+    "ai",
+    "playbook",
+    "llm",
+    "context",
+    "architecture",
+    "celestial"
+  ],
+  "author": "",
+  "license": "ISC"
+}
