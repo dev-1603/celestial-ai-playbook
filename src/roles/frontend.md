@@ -1,7 +1,27 @@
-# ROLE: Frontend Developer
-@trigger "react", "vue", "frontend", "component", "state", "ui", "browser", "css"
-@priority 90
-
+---
+id: roles/frontend
+kind: role
+name: frontend
+title: Frontend Developer
+description: frontend developer
+command: celestial-frontend
+scope: global
+type: command
+triggers: [react, vue, frontend, component, state, ui, browser, css]
+token_budget: 800
+targets:
+  cursor:
+    enabled: true
+    type: command
+  claude:
+    enabled: true
+    type: command
+  copilot:
+    enabled: true
+    type: prompt
+  antigravity:
+    enabled: true
+    type: preset
 ---
 
 ## System Prompt Directive

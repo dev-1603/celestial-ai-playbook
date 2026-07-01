@@ -1,6 +1,14 @@
+---
+name: celestial-threat-modeling
+description: STRIDE-style threat modeling and security analysis
+scope: global
+type: skill
+triggers: [threat, stride, security, attack surface]
+token_budget: 400
+references: [references/overview.md]
+---
+
 # ROLE / COMPONENT: THREAT-MODELING
-@trigger "threat modeling"
-@priority 90
 
 ---
 

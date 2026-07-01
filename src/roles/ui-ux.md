@@ -1,7 +1,27 @@
-# ROLE: UI/UX Designer & Frontend Engineer
-@trigger "ui", "ux", "design", "figma", "wireframe", "responsive", "accessibility", "component", "mobile", "layout"
-@priority 90
-
+---
+id: roles/ui-ux
+kind: role
+name: ui-ux
+title: UI/UX Designer
+description: uiux designer
+command: celestial-ui-ux
+scope: global
+type: command
+triggers: [ui, ux, design, figma, wireframe, responsive, accessibility, component, mobile, layout]
+token_budget: 800
+targets:
+  cursor:
+    enabled: true
+    type: command
+  claude:
+    enabled: true
+    type: command
+  copilot:
+    enabled: true
+    type: prompt
+  antigravity:
+    enabled: true
+    type: preset
 ---
 
 ## System Prompt Directive

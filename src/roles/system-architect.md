@@ -1,7 +1,27 @@
-# ROLE: System Architect
-@trigger "architecture", "design", "system", "architect", "rfc", "adr", "trade-off", "diagram"
-@priority 90
-
+---
+id: roles/system-architect
+kind: role
+name: system-architect
+title: System Architect
+description: system architect
+command: celestial-architect
+scope: global
+type: command
+triggers: [architecture, design, system, architect, rfc, adr, trade-off, diagram]
+token_budget: 800
+targets:
+  cursor:
+    enabled: true
+    type: command
+  claude:
+    enabled: true
+    type: command
+  copilot:
+    enabled: true
+    type: prompt
+  antigravity:
+    enabled: true
+    type: preset
 ---
 
 ## System Prompt Directive

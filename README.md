@@ -1,8 +1,10 @@
 # Celestial AI Playbook
 
-**Organization-wide AI engineering standards** for Cursor — shared across every repo under `Githubrepos/`, without replacing project-specific context.
+**Organization-wide AI engineering standards** for Cursor, Claude Code, GitHub Copilot, and Antigravity — shared across every repo under `Githubrepos/`, without baking product-specific logic into the global library.
 
-This repository is the **global layer**: roles, programming languages, frameworks, system design principles, design patterns, and architectural planning guidelines that apply org-wide. Each individual repository adds its **own** rules, skills, and commands for domain logic, product quirks, and team conventions.
+**Version 3.0.0** — global-only install pipeline with on-demand project rule generation.
+
+This repository is the **global layer**: roles, languages, frameworks, design patterns, and base policy. Each project repo adds its **own** rules, skills, and commands for domain logic, product quirks, and team conventions.
 
 ---
 
@@ -10,55 +12,77 @@ This repository is the **global layer**: roles, programming languages, framework
 
 | Scope | Location | Purpose |
 |---|---|---|
-| **Global (this repo)** | `~/.cursor/` via `ai-playbook install` | Org standards — how we write code, design systems, review PRs, plan architecture |
-| **Project (each repo)** | `.cursor/rules/`, `.cursor/skills/`, `.cursor/commands/` in that repo | Product domain, API contracts, naming, deployment, client-specific logic |
+| **Global (this repo)** | `~/.cursor/`, `~/.claude/`, `~/.cursor/celestial-playbook/` via `ai-playbook install` | Org standards — how we write code, design systems, review PRs |
+| **Project (each repo)** | `.cursor/rules/celestial-generated.mdc` + hand-authored `.cursor/rules/` | Product domain, architecture overlays, API contracts, deployment |
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
 │  GLOBAL — celestial-ai-playbook (install once per developer)    │
-│  • Base policy (always apply)                                   │
-│  • Language rules (TypeScript, Go, Python, JS — file globs)     │
-│  • Framework rules (NestJS, React, Vue, SvelteKit…)             │
-│  • Design patterns (API design, resiliency, event-driven…)      │
+│  • Base policy, language/framework/pattern rules                │
 │  • Role commands (/celestial-backend, /celestial-architect…)    │
 │  • Workflow skills (observability, performance, DDD, threats)   │
+│  Installed to ~/.cursor/ — never copied into project by default │
 └────────────────────────────┬────────────────────────────────────┘
-                             │  ai-playbook sync (per project)
+                             │  ai-playbook generate-rules (on demand)
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │  PROJECT — e.g. carecaddy-api, payments-service, admin-ui       │
-│  • .cursor/rules/        repo-specific rules (commit to git)    │
-│  • .cursor/skills/       repo-specific skills                   │
-│  • .cursor/commands/     repo-specific slash commands           │
-│  • .ai-playbook.json     which architecture overlays to enable  │
-│  • AGENTS.md             optional simple project instructions   │
+│  • .cursor/rules/celestial-generated.mdc  ← composed selectors  │
+│  • .ai-playbook/generate-notes.md         ← worker audit trail  │
+│  • .cursor/rules/*.mdc                    ← hand-authored (git)   │
+│  • .cursor/skills/                        ← project workflows   │
+│  • .cursor/commands/                      ← project commands    │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Yes — the global playbook handles variation across repos.** Language and framework rules attach automatically by file type (`**/*.ts`, `**/*.go`, etc.). Role commands are invoked when you need a persona. Project repos layer their own context on top — the two do not conflict.
+**Composition, not monoliths.** Language rules attach by file glob. Role commands switch persona. Project rules are **generated** from selectors (`/role/backend`, `/typescript`, `/base`, `/architecture/carecaddy`) — not synced wholesale from global.
+
+---
+
+## Quick start
+
+### One-time (per developer)
+
+```bash
+git clone git@github.com:your-org/celestial-ai-playbook.git
+cd celestial-ai-playbook
+./install.sh                  # links ai-playbook CLI globally
+ai-playbook install           # global Cursor: rules, skills, commands → ~/.cursor/
+ai-playbook install-all       # global: Cursor + Claude + Copilot + Antigravity
+ai-playbook manifest          # verify taxonomy
+```
+
+### Per project (on demand)
+
+```bash
+cd ~/Githubrepos/my-service
+
+# Generate project-local rules from selectors (absolute path required)
+ai-playbook generate-rules "$(pwd)" \
+  --selectors /role/backend /language/typescript /frameworks/nestjs /base
+
+# Result:
+#   .cursor/rules/celestial-generated.mdc
+#   .ai-playbook/generate-notes.md
+```
+
+Add hand-authored project rules directly under `.cursor/rules/` and commit to git.
 
 ---
 
 ## How variation works across repositories
 
-Different repos need different combinations. The playbook handles this through **composition**, not one monolithic prompt.
+### 1. Programming language (automatic via global rules)
 
-### 1. Programming language (automatic)
+When you edit files, Cursor applies matching global rules (installed under `~/.cursor/celestial-playbook/rules/`):
 
-When you edit files in a repo, Cursor applies only the matching language rule:
-
-| Repo type | Files open | Global rule applied |
+| Repo type | Files open | Global rules |
 |---|---|---|
-| NestJS API | `src/users.service.ts` | `celestial-languages-typescript` + `celestial-frameworks-nestjs` |
-| Go microservice | `internal/handler.go` | `celestial-languages-go-core` |
-| Python ML pipeline | `train.py` | `celestial-languages-python-core` |
-| React dashboard | `Dashboard.tsx` | `celestial-languages-typescript` + `celestial-frameworks-react-next` |
-
-No per-repo config needed for languages — globs handle it.
+| NestJS API | `src/users.service.ts` | typescript + nestjs |
+| Go microservice | `internal/handler.go` | go-core |
+| React dashboard | `Dashboard.tsx` | typescript + react-next |
 
 ### 2. Role / task (explicit command)
-
-Same repo, different tasks — invoke the right persona:
 
 ```text
 /celestial-backend      → building an API endpoint
@@ -68,384 +92,201 @@ Same repo, different tasks — invoke the right persona:
 /celestial-qa           → writing E2E tests
 ```
 
-### 3. Domain / product (project overlay)
+### 3. Product / architecture overlay (project generation)
 
-Product-specific architecture lives in **project** config, not globally:
+Product-specific architecture (`src/architecture/*.md`) is **never installed globally**. Select it at generation time:
 
-```json
-// carecaddy-api/.ai-playbook.json
-{
-  "architecture": ["control-plane", "carecaddy"]
-}
+```bash
+ai-playbook generate-rules "$(pwd)" \
+  --selectors /architecture/control-plane /architecture/carecaddy /base
 ```
-
-```json
-// generic-saas-api/.ai-playbook.json
-{
-  "architecture": ["control-plane", "core-ecosystem"]
-}
-```
-
-Run `ai-playbook sync` — only the architecture overlays listed in that repo's config are copied to `.cursor/rules/`.
 
 ### 4. Repo-specific rules (fully separate)
-
-Things that must **never** be global:
 
 ```text
 my-payment-service/
   .cursor/
     rules/
-      stripe-webhooks.mdc       # project only
-      pci-compliance.mdc        # project only
+      celestial-generated.mdc     # from generate-rules
+      stripe-webhooks.mdc         # hand-authored, in git
     commands/
-      deploy-staging.md         # /deploy-staging
+      deploy-staging.md
     skills/
       payment-reconciliation/
-        SKILL.md                # project workflow
+        SKILL.md
 ```
-
-Commit these to git. They merge with global rules at runtime — Cursor applies Team → Project → User rules together.
 
 ---
 
-## Three Cursor primitives (taxonomy)
+## Three primitives (taxonomy)
 
-Everything in the playbook maps to exactly one Cursor mechanism. See [PLAYBOOK.md](./PLAYBOOK.md) for the full manifest.
+See [PLAYBOOK.md](docs/PLAYBOOK.md) and `ai-playbook manifest`.
 
 | Primitive | Count | Global path | When it applies |
 |---|---|---|---|
-| **Rules** | 27 | `~/.cursor/celestial-playbook/rules/` → sync to project | Standards — always-on, file-scoped, or intelligent |
-| **Skills** | 4 | `~/.cursor/skills/celestial-*/` | Deep workflows — observability, performance, DDD, threat modeling |
-| **Commands** | 13 | `~/.cursor/commands/celestial-*.md` | Personas — type `/celestial-backend` in chat |
+| **Rules** | 27 | `~/.cursor/celestial-playbook/rules/` | Standards — always-on or file-scoped |
+| **Skills** | 4 | `~/.cursor/skills/celestial-*/` | On-demand workflows (JIT references) |
+| **Commands** | 13 | `~/.cursor/commands/celestial-*.md` | Personas — `/celestial-backend` |
+
+---
+
+## Project rule generator (orchestrator-workers)
+
+`generate-rules` composes project-local rules without loading the full playbook into context:
+
+```text
+Router  → parse/validate selectors (max 8) against playbook.manifest.json
+Worker  → read each module in isolation → condensed summary (~1500 tokens)
+Notes   → append summaries to .ai-playbook/generate-notes.md
+Synthesis → combine summaries into .cursor/rules/celestial-generated.mdc
+```
+
+**Selector examples:**
+
+```bash
+--selectors /role/system-architect /language/typescript /frameworks/vue-nuxt /rest /base
+--selectors /role/backend /architecture/control-plane
+--selectors /system-architect /typescript /vue-nuxt   # aliases supported
+```
+
+Prefixes: `/role/`, `/language/`, `/frameworks/`, `/rest`, `/base`, `/architecture/`, etc.
 
 ---
 
 ## Multi-IDE support
 
-The **same source content** (`src/`) works across **Cursor, Claude, Copilot, and Antigravity**. Only the export format differs.
+Same `src/` content, global install targets per IDE:
 
-| IDE / Tool | Export command | Output | Format |
-|---|---|---|---|
-| **Cursor** | `ai-playbook sync` | `.cursor/rules/*.mdc` | Cursor Rules (frontmatter + markdown) |
-| **Claude Code** | `ai-playbook export-claude` | `CLAUDE.md` | Single global markdown file |
-| **GitHub Copilot** | `ai-playbook export-copilot` | `.github/copilot-instructions.md` | Repo instructions markdown |
-| **Antigravity** | `ai-playbook export-antigravity` | `.rules/*.md` | Plain markdown directory |
-| **All** | `ai-playbook install-all` | Rules + roles for all IDEs | Automatic |
+| IDE | Install | Global output |
+|---|---|---|
+| **Cursor** | `ai-playbook install` | `~/.cursor/commands/`, `~/.cursor/skills/`, `~/.cursor/celestial-playbook/rules/` |
+| **Claude Code** | `ai-playbook install-all` | `~/.claude/commands/`, `~/.cursor/celestial-playbook/claude/CLAUDE.md` |
+| **GitHub Copilot** | `ai-playbook install-all` | `~/.github/prompts/`, `~/.cursor/celestial-playbook/copilot/copilot-instructions.md` |
+| **Antigravity** | `ai-playbook install-all` | `~/.agent/presets/`, `~/.cursor/celestial-playbook/antigravity/rules/` |
 
-### Role exports (all IDEs)
-
-`export-roles` reads `src/roles/*.md`, normalizes each file into a canonical role object, and dispatches to per-IDE renderers. Roles can include optional YAML frontmatter for explicit metadata; files without frontmatter work via fallback defaults.
+Role exports use YAML frontmatter from `src/roles/*.md` via `export-roles` (defaults to global paths):
 
 ```bash
-ai-playbook export-roles                          # all 4 targets → cwd
-ai-playbook export-roles --target cursor          # single target
-ai-playbook export-roles --target claude,copilot  # comma-separated
-ai-playbook export-roles --project ../my-service  # write into another dir
+ai-playbook export-roles                    # global, all targets
+ai-playbook export-roles --target cursor    # single target
+ai-playbook export-roles --project /abs/path/to/repo  # opt-in project write
 ```
 
-| Target | Output path | Invoke | Format |
-|---|---|---|---|
-| `cursor` | `.cursor/commands/celestial-*.md` | `/celestial-backend` | Plain markdown command |
-| `claude` | `.claude/commands/celestial-*.md` | `/celestial-backend` | YAML frontmatter + markdown |
-| `copilot` | `.github/prompts/celestial-*.prompt.md` | `/celestial-backend` | Copilot prompt file |
-| `antigravity` | `.agent/presets/celestial-*.md` | Preset picker | Preset frontmatter + markdown |
+Skills use JIT layout — see [REFRACTOR-LESSONS.md](docs/REFRACTOR-LESSONS.md):
 
-All generated files contain `<!-- AUTO-GENERATED by celestial-ai-playbook ... -->`. Edit `src/roles/` instead.
-
-**Skills** remain Cursor-only (`~/.cursor/skills/`).
-
-```bash
-# Bootstrap (global, once per developer)
-ai-playbook install               # Cursor: global commands, skills, rules
-
-# Per-repository (run from each project repo)
-ai-playbook sync                  # rules → .cursor/rules/
-ai-playbook export-claude         # rules → CLAUDE.md
-ai-playbook export-copilot        # rules → .github/copilot-instructions.md
-ai-playbook export-antigravity    # rules → .rules/
-ai-playbook export-roles          # roles → .cursor/.claude/.github/.agent
-ai-playbook install-all           # all of the above
-```
-
-### Example: multi-IDE repo setup
-
-```bash
-cd ~/Githubrepos/my-service
-
-# Export global rules for all four IDEs
-ai-playbook install-all
-
-# Result:
-#   .cursor/rules/*.mdc          ← Cursor
-#   CLAUDE.md                     ← Claude Code
-#   .github/copilot-instructions.md  ← Copilot
-#   .rules/*.md                   ← Antigravity
-```
-
-Each team member can use their preferred IDE — all share the same org standards.
-
----
-
-```bash
-ai-playbook manifest          # print full taxonomy
+```text
+src/skills/performance-tuning/
+  SKILL.md              # lean heuristics + pointers
+  references/           # loaded on demand via skill-resolver
 ```
 
 ---
 
 ## 6-layer composition model
 
-Rules are composed in strict order. Lower layers never absorb higher layers.
-
-| Layer | Source | Cursor type | Scope |
+| Layer | Source | Type | Scope |
 |---|---|---|---|
-| **1 — Base policy** | `src/base/global-rules.md` | Rule (`alwaysApply: true`) | Global |
+| **1 — Base** | `src/base/global-rules.md` | Rule | Global |
 | **2 — Domain** | `src/domain/` *(planned)* | Rule | Global or project |
-| **3 — Product** | `src/architecture/*.md` | Rule | **Project only** (via `.ai-playbook.json`) |
+| **3 — Product** | `src/architecture/*.md` | Rule | **Project only** (via `generate-rules`) |
 | **4 — Tenant** | *(planned)* | Rule | Project |
 | **5 — Environment** | *(planned)* | Rule | Project |
-| **6 — Task** | `src/roles/` → Commands, `src/skills/` → Skills | Command / Skill | Global |
+| **6 — Task** | `src/roles/`, `src/skills/` | Command / Skill | Global |
 
-Supporting layers (also global rules):
-
-- `src/languages/` — TypeScript, JavaScript, Python, Go
-- `src/frameworks/` — NestJS, React/Next, Vue/Nuxt, SvelteKit, Express
-- `src/design-patterns/` — API design, resiliency, event-driven, data consistency
-- `src/data-layers/` — SQL, NoSQL, graph
-- `src/cloud-ai/` — AI safety, orchestration, infrastructure
+Supporting global rules: `languages/`, `frameworks/`, `design-patterns/`, `data-layers/`, `cloud-ai/`.
 
 ---
 
-## Implementation plan
-
-### Phase 1 — Developer bootstrap (one time)
-
-Each developer on the team:
-
-```bash
-git clone git@github.com:your-org/celestial-ai-playbook.git
-cd celestial-ai-playbook
-./install.sh                  # links ai-playbook CLI globally
-ai-playbook install           # writes commands, skills, rules → ~/.cursor/
-ai-playbook manifest          # verify taxonomy
-```
-
-**Outcome:** All org-wide commands (`/celestial-*`), skills, and rule templates available in every Cursor session.
-
-### Phase 2 — Per-repository setup
-
-In each repo under `Githubrepos/`:
-
-```bash
-cd ~/Githubrepos/my-service
-
-# Optional: enable product architecture overlays
-cp /path/to/celestial-ai-playbook/.ai-playbook.example.json .ai-playbook.json
-# Edit architecture[] for this product
-
-# Copy global rules into the project
-ai-playbook sync
-
-# Add repo-specific context (commit these)
-mkdir -p .cursor/rules .cursor/commands .cursor/skills
-```
-
-**Outcome:** Global standards + project overlays active. Repo-specific rules live in git.
-
-### Phase 3 — Day-to-day usage
+## Day-to-day usage
 
 | Situation | Action |
 |---|---|
-| Building a NestJS endpoint | Open `.ts` files (rules auto-attach) + `/celestial-backend` |
+| Building a NestJS endpoint | Open `.ts` files (global rules auto-attach) + `/celestial-backend` |
 | Reviewing a PR | `/celestial-review-pr` |
 | Designing a new service | `/celestial-architect` |
-| Slow database query | Ask agent to optimize → `celestial-performance-tuning` skill loads |
-| Security review | "Run threat modeling" → `celestial-threat-modeling` skill loads |
-
-### Phase 4 — Team maintenance
-
-| Task | Command |
-|---|---|
-| Add a new global role | `ai-playbook create roles security-engineer` → add to `playbook.manifest.json` as `"type": "command"` → `ai-playbook install` |
-| Add a new language standard | Create `src/languages/rust-core.md` → manifest entry with `"type": "rule"` and `"globs": "**/*.rs"` → install + sync |
-| Update org base policy | Edit `src/base/global-rules.md` → `ai-playbook install && ai-playbook sync` in active projects |
-| Repo-only rule | Create `.cursor/rules/my-rule.mdc` directly in the repo — no playbook change needed |
-
-### Phase 5 — Future (planned layers)
-
-- [ ] `src/domain/` — healthcare, fintech, ecommerce overlays (Layer 2)
-- [ ] `src/tenant/` — client-specific constraints (Layer 4)
-- [ ] `src/environment/` — prod vs staging rules (Layer 5)
-- [ ] CI check — validate manifest matches `src/` files
-- [ ] Team Rules import — sync base policy to Cursor Team dashboard
+| New repo needs org + product context | `ai-playbook generate-rules "$(pwd)" --selectors ...` |
+| Slow database query | `celestial-performance-tuning` skill (JIT references) |
+| Security review | `celestial-threat-modeling` skill |
 
 ---
 
 ## Examples by repository type
 
-### Example A — NestJS backend API (TypeScript)
+### NestJS backend API
+
+```bash
+cd ~/Githubrepos/user-service
+ai-playbook generate-rules "$(pwd)" \
+  --selectors /role/backend /language/typescript /frameworks/nestjs \
+              /architecture/control-plane /base
+```
 
 ```text
 ~/Githubrepos/user-service/
-├── .ai-playbook.json          # { "architecture": ["control-plane"] }
-├── .cursor/
-│   └── rules/
-│       ├── celestial-base-global-rules.mdc      ← from sync
-│       ├── celestial-languages-typescript.mdc   ← from sync
-│       ├── celestial-frameworks-nestjs.mdc      ← from sync
-│       ├── celestial-architecture-control-plane.mdc  ← from sync
-│       └── user-service-conventions.mdc       ← PROJECT ONLY (in git)
-└── src/
-    └── users/users.controller.ts
+├── .cursor/rules/
+│   ├── celestial-generated.mdc           ← generated
+│   └── user-service-conventions.mdc      ← project only (git)
+└── src/users/users.controller.ts
 ```
 
-**Session:**
+### CareCaddy healthcare (architecture overlay)
 
-```text
-You: /celestial-backend
-You: Add a PATCH /users/:id endpoint with tenant scoping
-
-Agent context:
-  ✓ global-rules (always)
-  ✓ typescript rule (file glob)
-  ✓ nestjs rule (file glob)
-  ✓ control-plane architecture (project sync)
-  ✓ user-service-conventions (project rule)
-  ✓ backend persona (command)
+```bash
+ai-playbook generate-rules "$(pwd)" \
+  --selectors /role/backend /architecture/control-plane /architecture/carecaddy /base
 ```
 
-### Example B — React / Next.js frontend
+Global playbook stays domain-neutral. CareCaddy HIPAA/PHI rules are Layer 3 — selected only when explicitly requested.
 
-```text
-~/Githubrepos/admin-dashboard/
-├── .ai-playbook.json          # { "architecture": ["core-ecosystem"] }
-├── .cursor/
-│   └── rules/
-│       ├── celestial-frameworks-react-next.mdc  ← from sync
-│       ├── celestial-frameworks-styling-system.mdc
-│       └── design-system-tokens.mdc             ← PROJECT ONLY
+### Go microservice
+
+```bash
+ai-playbook generate-rules "$(pwd)" \
+  --selectors /role/go-engineer /language/go-core /base
 ```
-
-**Session:**
-
-```text
-You: /celestial-frontend
-You: Build an accessible data table component using our design tokens
-
-Agent context:
-  ✓ global-rules + WCAG standards
-  ✓ react-next + styling rules (file globs)
-  ✓ design-system-tokens (project rule)
-  ✓ frontend persona (command)
-```
-
-### Example C — Go microservice (different language, same org standards)
-
-```text
-~/Githubrepos/notification-worker/
-├── .ai-playbook.json          # { "architecture": ["core-ecosystem"] }
-├── .cursor/
-│   └── rules/
-│       ├── celestial-languages-go-core.mdc      ← auto for .go files
-│       └── sqs-consumer-patterns.mdc            ← PROJECT ONLY
-```
-
-**Session:**
-
-```text
-You: /celestial-go
-You: Implement a concurrent email dispatcher with context cancellation
-
-Agent context:
-  ✓ global-rules (always)
-  ✓ go-core rule (file glob — NOT typescript rules)
-  ✓ go engineer persona (command)
-  ✓ sqs-consumer-patterns (project rule)
-```
-
-### Example D — CareCaddy healthcare product (domain overlay)
-
-```text
-~/Githubrepos/carecaddy-api/
-├── .ai-playbook.json
-│   # { "architecture": ["control-plane", "carecaddy"] }
-├── .cursor/
-│   └── rules/
-│       ├── celestial-architecture-carecaddy.mdc  ← HIPAA/PHI overlay
-│       └── phi-field-masking.mdc               ← PROJECT ONLY
-```
-
-Global playbook stays domain-neutral. CareCaddy-specific compliance is Layer 3 — enabled only for repos that opt in via `.ai-playbook.json`.
-
-### Example E — Repo-specific command (not in global playbook)
-
-```markdown
-<!-- .cursor/commands/deploy-staging.md -->
-Deploy the current branch to staging:
-
-1. Run `npm run test`
-2. Run `npm run build`
-3. Run `./scripts/deploy.sh staging`
-4. Verify health check at https://staging.example.com/health
-```
-
-Type `/deploy-staging` — only exists in this repo. Global `/celestial-devops` covers general DevOps persona; project command covers your exact pipeline.
-
----
-
-## Project configuration
-
-Copy `.ai-playbook.example.json` to `.ai-playbook.json` in each repo:
-
-```json
-{
-  "architecture": ["control-plane", "core-ecosystem"],
-  "domain": null,
-  "activeRole": "backend",
-  "outputTargets": [".cursorrules"]
-}
-```
-
-| Field | Purpose |
-|---|---|
-| `architecture` | Product overlays to include on `ai-playbook sync` (Layer 3) |
-| `domain` | Reserved for future Layer 2 domain overlays |
-| `activeRole` | Default role for legacy `ai-playbook switch <role>` |
-| `outputTargets` | Legacy flat-file output (`.cursorrules`) — optional |
 
 ---
 
 ## CLI reference
 
-```bash
-# Setup
-./install.sh                      # install CLI globally
-ai-playbook install               # Cursor: global → ~/.cursor/commands, skills, rules
+Full contracts: [CLI.md](docs/CLI.md)
 
-# Per-project (choose one or more)
-ai-playbook sync                  # Cursor: rules → .cursor/rules/
-ai-playbook export-claude         # Claude: rules → CLAUDE.md
-ai-playbook export-copilot        # Copilot: rules → .github/copilot-instructions.md
-ai-playbook export-antigravity    # Antigravity: rules → .rules/
-ai-playbook export-roles          # Roles → .cursor/.claude/.github/.agent
-  --target <t>                    #   filter to one target (cursor|claude|copilot|antigravity)
-  --project <dir>                 #   write into <dir> instead of cwd
-ai-playbook verify-roles          # Test role exporters
-ai-playbook install-all           # All IDEs at once
+```bash
+# Global install (once per developer)
+ai-playbook install               # Cursor: ~/.cursor/
+ai-playbook install-all           # All 4 IDEs, global paths only
+
+# Project rule generation
+ai-playbook generate-rules <abs-path> --selectors /role/x /language/y /base
+
+# Role export (global by default)
+ai-playbook export-roles [--target cursor|claude|copilot|antigravity] [--project <abs-path>]
 
 # Inspect
-ai-playbook manifest              # rules vs skills vs commands taxonomy
-ai-playbook list all              # all source components
-ai-playbook validate              # check src/ directory structure
+ai-playbook manifest
+ai-playbook list [category]
+ai-playbook validate
 
 # Authoring
-ai-playbook create roles "security-engineer"
-ai-playbook create skills "event-sourcing"
-ai-playbook remove skills "old-skill"
+ai-playbook create roles security-engineer
+ai-playbook remove skills old-skill
 
-# Legacy (monolithic single-file output)
-ai-playbook switch backend        # writes .cursorrules from composed layers
+# Verification
+ai-playbook verify-frontmatter
+ai-playbook verify-skill-resolver
+ai-playbook verify-roles
+ai-playbook eval                  # E2E eval suite
+npm run eval:all                  # smoke + E2E
+npm run audit:static              # structural invariant checks
 ```
+
+**Removed in v3** (use replacements above):
+
+| Removed | Replacement |
+|---------|-------------|
+| `sync`, `export` | `generate-rules <abs-path> --selectors ...` |
+| `switch` | `generate-rules` with `/role/<name>` + `/base` |
+| `export-claude`, `export-copilot`, `export-antigravity` | `install-all` |
 
 ---
 
@@ -453,42 +294,52 @@ ai-playbook switch backend        # writes .cursorrules from composed layers
 
 ```text
 celestial-ai-playbook/
-├── playbook.manifest.json        # taxonomy: rule | skill | command per component
-├── PLAYBOOK.md                   # detailed Cursor integration guide
-├── .ai-playbook.example.json     # per-repo config template
+├── playbook.manifest.json        # taxonomy registry (v3.0.0)
+├── docs/                         # reports, audits, reference docs
+│   ├── CHANGELOG.md
+│   ├── AUDIT.md
+│   ├── GAP_REPORT.md
+│   ├── CLI.md
+│   ├── PLAYBOOK.md
+│   └── ...
 ├── bin/ai-playbook               # CLI entry point
 ├── scripts/
-│   ├── install-cursor.mjs        # install + sync engine
-│   ├── export-roles.mjs          # role export entrypoint (frontmatter-based)
+│   ├── install-cursor.mjs        # global Cursor install
+│   ├── install-all-ides.mjs      # global multi-IDE install
+│   ├── install-multi-ide.mjs     # global rules for Claude/Copilot/Antigravity
+│   ├── export-roles.mjs          # role export (frontmatter-based)
+│   ├── audit/static-scan.mjs     # reusable invariant checks
+│   ├── eval/                     # smoke + E2E eval suites
+│   ├── project-rule-generator/   # router, worker, notes, synthesize
 │   └── lib/
-│       ├── frontmatter.mjs       # generic YAML frontmatter parser
-│       ├── load-roles.mjs        # normalized role loader + schema
-│       ├── cursor-export.mjs     # rule/command/skill builders
-│       └── role-adapters.mjs     # legacy per-target adapters
+│       ├── frontmatter.mjs
+│       ├── load-roles.mjs
+│       ├── skill-resolver.mjs    # JIT metadata → SKILL → references
+│       ├── cursor-export.mjs
+│       └── global-paths.mjs
 └── src/
     ├── base/                     # Layer 1 — global policy
-    ├── architecture/             # Layer 3 — product overlays (project-scoped)
-    ├── languages/                # Rules — file globs per language
-    ├── frameworks/               # Rules — file globs per framework
-    ├── design-patterns/          # Rules — intelligent apply
-    ├── data-layers/              # Rules — SQL, NoSQL, graph
-    ├── cloud-ai/                 # Rules — AI platform standards
-    ├── skills/                   # Skills — on-demand workflows
-    └── roles/                    # Commands — engineering personas
+    ├── architecture/             # Layer 3 — project-only overlays
+    ├── languages/
+    ├── frameworks/
+    ├── design-patterns/
+    ├── data-layers/
+    ├── cloud-ai/
+    ├── skills/                   # Skills (flat .md or <slug>/SKILL.md + references/)
+    └── roles/                    # Commands — YAML frontmatter
 ```
 
 ---
 
 ## Adding a new global component
 
-1. **Create source file**
+1. Create source file:
 
    ```bash
-   ai-playbook create roles "security-engineer"
-   # or manually: src/languages/rust-core.md
+   ai-playbook create roles security-engineer
    ```
 
-2. **Register in manifest** (`playbook.manifest.json`)
+2. Register in `playbook.manifest.json`:
 
    ```json
    "roles/security-engineer": {
@@ -498,49 +349,57 @@ celestial-ai-playbook/
    }
    ```
 
-   ```json
-   "languages/rust-core": {
-     "type": "rule",
-     "globs": "**/*.rs",
-     "description": "Rust language standards from Celestial Playbook"
-   }
-   ```
-
-3. **Install and sync**
+3. Install globally:
 
    ```bash
    ai-playbook install
-   cd ~/Githubrepos/target-repo && ai-playbook sync
    ```
+
+4. For skills with heavy content, use directory layout per [REFRACTOR-LESSONS.md](docs/REFRACTOR-LESSONS.md).
+
+---
+
+## Team maintenance
+
+| Task | Command |
+|---|---|
+| Update global install after src changes | `ai-playbook install` or `install-all` |
+| Refresh project composed rules | `ai-playbook generate-rules "$(pwd)" --selectors ...` |
+| Add global role | `create` → manifest → `install` |
+| Validate structure | `npm run audit:static && npm run eval:all` |
 
 ---
 
 ## FAQ
 
 **Will global rules conflict with project rules?**  
-No. Cursor merges them. Project rules take precedence for repo-specific concerns. Global rules provide the org baseline (security, tenancy, code quality).
+No. Cursor merges Team → Project → User rules. Project rules take precedence for repo-specific concerns.
 
-**Do I need to sync every repo?**  
-Run `ai-playbook sync` once per repo (and again after playbook updates). Commands and skills are global — no sync needed for those.
-
-**What if a repo uses multiple languages?**  
-Each language rule uses file globs. Editing a `.go` file activates Go rules; editing `.ts` activates TypeScript rules — in the same repo.
+**Do I need to run anything per repo?**  
+Global commands and skills work everywhere after `install`. Run `generate-rules` when you want composed project rules (architecture overlays, role context). Hand-author additional `.cursor/rules/*.mdc` as needed.
 
 **Should product/domain logic go in this repo?**  
-No. Keep product logic in project `.cursor/rules/` or enable a Layer 3 architecture overlay via `.ai-playbook.json`. This repo stays domain-neutral at Layer 1.
+No. Product logic belongs in project rules or `src/architecture/` (consumed via `generate-rules`, never installed globally).
 
-**What about repos that don't use Celestial architecture?**  
-Use an empty architecture array — you still get global base policy, language rules, framework rules, commands, and skills:
+**What if a repo doesn't use Celestial architecture?**  
+Omit architecture selectors — you still get global base, language, framework rules, commands, and skills:
 
-```json
-{ "architecture": [] }
+```bash
+ai-playbook generate-rules "$(pwd)" --selectors /role/backend /language/typescript /base
 ```
 
 ---
 
 ## Related docs
 
-- [PLAYBOOK.md](./PLAYBOOK.md) — Cursor primitive mapping and decision guide
-- [playbook.manifest.json](./playbook.manifest.json) — component registry (source of truth)
-- [Cursor Rules docs](https://cursor.com/docs/context/rules) — official `.mdc` rule format
-- [Cursor Commands](https://cursor.com/docs/agent/chat/commands) — slash command format
+| Doc | Purpose |
+|---|---|
+| [CLI.md](docs/CLI.md) | Command input/output contracts |
+| [PLAYBOOK.md](docs/PLAYBOOK.md) | Cursor primitive mapping |
+| [CHANGELOG.md](docs/CHANGELOG.md) | Version history |
+| [REFRACTOR-LESSONS.md](docs/REFRACTOR-LESSONS.md) | Skill JIT layout pattern |
+| [PLAN-DEPENDENCIES.md](docs/PLAN-DEPENDENCIES.md) | Multi-phase refactor DAG |
+| [MODEL-GUIDANCE.md](docs/MODEL-GUIDANCE.md) | Frontier vs fast execution tiers |
+| [GAP_REPORT.md](docs/GAP_REPORT.md) | Post-refactor gap analysis |
+| [docs/README.md](docs/README.md) | Full documentation index |
+| [playbook.manifest.json](./playbook.manifest.json) | Component registry |

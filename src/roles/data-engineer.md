@@ -1,7 +1,27 @@
-# ROLE: Data Engineer
-@trigger "pipeline", "etl", "data", "ingestion", "transformation", "airflow", "spark", "dbt", "kafka", "streaming", "batch"
-@priority 90
-
+---
+id: roles/data-engineer
+kind: role
+name: data-engineer
+title: Data Engineer
+description: data engineer
+command: celestial-data-engineer
+scope: global
+type: command
+triggers: [pipeline, etl, data, ingestion, transformation, airflow, spark, dbt, kafka, streaming, batch]
+token_budget: 800
+targets:
+  cursor:
+    enabled: true
+    type: command
+  claude:
+    enabled: true
+    type: command
+  copilot:
+    enabled: true
+    type: prompt
+  antigravity:
+    enabled: true
+    type: preset
 ---
 
 ## System Prompt Directive

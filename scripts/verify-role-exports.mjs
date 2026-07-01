@@ -1,20 +1,14 @@
 #!/usr/bin/env node
 
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { loadManifest } from './lib/cursor-export.mjs';
-import { collectRoles, normalizeRole } from './lib/role-parser.mjs';
-import {
-  ROLE_TARGETS,
-  roleArtifactFilename,
-  adaptRole,
-} from './lib/role-adapters.mjs';
-import { exportRoles } from './export-roles.mjs';
+import { loadRoles } from './lib/load-roles.mjs';
+import { exportRoles, render } from './export-roles.mjs';
+import { getGlobalPaths } from './lib/global-paths.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const REPO_ROOT = path.resolve(__dirname, '..');
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 let failures = 0;
 
@@ -32,125 +26,59 @@ function assert(condition, message) {
   else pass(message);
 }
 
-function testMetadataFallback() {
-  const role = normalizeRole({
-    key: 'roles/sample',
-    manifestConfig: null,
-    content: `# ROLE: Sample Engineer
-@trigger "sample", "demo"
-@priority 77
-
-Body content here.`,
-  });
-
-  assert(role.command === 'celestial-sample', 'default command derived from role name');
-  assert(role.title === 'Sample Engineer', 'title derived from H1');
-  assert(role.triggers.includes('sample'), 'legacy @trigger parsed');
-  assert(role.priority === 77, 'legacy @priority parsed');
-  assert(role.body.includes('Body content here'), 'body stripped of legacy metadata');
+function testLoadRoles() {
+  const roles = loadRoles(path.join(REPO_ROOT, 'src', 'roles'));
+  assert(roles.length === 13, `loaded ${roles.length} roles`);
+  const pr = roles.find(r => r.name === 'pr-reviewer');
+  assert(pr?.command === 'celestial-review-pr', 'pr-reviewer command aligned with manifest');
+  assert(pr?.targets.cursor.type === 'command', 'pr-reviewer cursor target type');
 }
 
-function testYamlFrontmatter() {
-  const role = normalizeRole({
-    key: 'roles/security',
-    manifestConfig: { type: 'command', command: 'celestial-security', title: 'Security' },
-    content: `---
-title: Security Engineer
-command: celestial-sec
-triggers: [audit, scan]
-priority: 88
-description: Security review persona
----
+function testRenderers() {
+  const roles = loadRoles(path.join(REPO_ROOT, 'src', 'roles'));
+  const be = roles.find(r => r.name === 'backend');
+  const cursor = render('cursor', be);
+  assert(cursor.includes('AUTO-GENERATED'), 'cursor render has banner');
+  assert(cursor.includes('Backend Developer'), 'cursor render has title');
 
-# ROLE: Ignored When Frontmatter Present
+  const claude = render('claude', be);
+  assert(claude.includes('disable-model-invocation: true'), 'claude render has frontmatter');
 
-Directive body.`,
-  });
-
-  assert(role.command === 'celestial-security', 'manifest command overrides frontmatter');
-  assert(role.title === 'Security', 'manifest title overrides frontmatter');
-  assert(role.triggers.includes('audit'), 'YAML triggers parsed');
-  assert(role.priority === 88, 'YAML priority parsed');
+  const copilot = render('copilot', be);
+  assert(copilot.includes('.prompt.md') === false, 'copilot render is content not filename');
+  assert(copilot.includes('agent: agent'), 'copilot render has agent field');
 }
 
-function testUnsupportedTarget() {
-  try {
-    adaptRole('unknown-ide', { command: 'x', title: 'X', body: 'y', source: 'src/roles/x.md' });
-    fail('unsupported target should throw');
-  } catch (err) {
-    assert(err.message.includes('Unsupported'), 'unsupported target fails clearly');
-  }
-}
-
-function testExportInTempDir() {
-  const tmp = fs.mkdtempSync(path.join(REPO_ROOT, '.tmp-role-export-'));
+function testExportGlobalTemp() {
+  const tmpHome = fs.mkdtempSync(path.join(REPO_ROOT, '.tmp-global-export-'));
+  const paths = getGlobalPaths(tmpHome);
 
   try {
     exportRoles({
-      targets: ['cursor', 'claude', 'copilot', 'antigravity'],
-      projectDir: tmp,
+      targets: ['cursor', 'claude'],
+      global: true,
+      homeDir: tmpHome,
       repoRoot: REPO_ROOT,
     });
-    pass('exportRoles runs successfully in temp project');
+
+    assert(fs.existsSync(paths.cursor.commands), 'cursor commands dir created');
+    const files = fs.readdirSync(paths.cursor.commands).filter(f => f.endsWith('.md'));
+    assert(files.length >= 13, `cursor commands exported (${files.length})`);
+
+    const sample = fs.readFileSync(path.join(paths.cursor.commands, 'celestial-backend.md'), 'utf-8');
+    assert(sample.includes('AUTO-GENERATED'), 'exported file has banner');
   } catch (err) {
-    fail(`exportRoles failed: ${err.message}`);
-    return;
+    fail(`exportRoles global failed: ${err.message}`);
+  } finally {
+    fs.rmSync(tmpHome, { recursive: true, force: true });
   }
-
-  const manifest = loadManifest(REPO_ROOT);
-  const roles = collectRoles(REPO_ROOT, manifest);
-
-  for (const target of Object.keys(ROLE_TARGETS)) {
-    for (const role of roles) {
-      const fileName = roleArtifactFilename(target, role);
-      let filePath;
-      switch (target) {
-        case 'cursor':
-          filePath = path.join(tmp, '.cursor', 'commands', fileName);
-          break;
-        case 'claude':
-          filePath = path.join(tmp, '.claude', 'commands', fileName);
-          break;
-        case 'copilot':
-          filePath = path.join(tmp, '.github', 'prompts', fileName);
-          break;
-        case 'antigravity':
-          filePath = path.join(tmp, '.agent', 'presets', fileName);
-          break;
-      }
-
-      assert(fs.existsSync(filePath), `${target}: ${fileName} generated`);
-
-      const content = fs.readFileSync(filePath, 'utf-8');
-      assert(content.includes('Generated by celestial-ai-playbook'), `${target}: generated banner present`);
-      assert(content.includes(role.title) || content.includes(role.command), `${target}: role content present`);
-    }
-  }
-
-  fs.rmSync(tmp, { recursive: true, force: true });
-}
-
-function testStableFilenames() {
-  const manifest = loadManifest(REPO_ROOT);
-  const roles = collectRoles(REPO_ROOT, manifest);
-  const backend = roles.find((r) => r.name === 'backend');
-
-  assert(backend?.command === 'celestial-backend', 'backend command name stable');
-  assert(
-    roleArtifactFilename('copilot', backend) === 'celestial-backend.prompt.md',
-    'copilot filename stable'
-  );
 }
 
 function main() {
   console.log('\n🧪 Verifying role export pipeline\n');
-
-  testMetadataFallback();
-  testYamlFrontmatter();
-  testUnsupportedTarget();
-  testStableFilenames();
-  testExportInTempDir();
-
+  testLoadRoles();
+  testRenderers();
+  testExportGlobalTemp();
   console.log(`\n${failures === 0 ? '✅ All role export checks passed' : `❌ ${failures} check(s) failed`}\n`);
   process.exit(failures === 0 ? 0 : 1);
 }

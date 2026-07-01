@@ -1,6 +1,6 @@
 {
   "name": "celestial-ai-playbook",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Domain-neutral AI context orchestrator for the Celestial Platform",
   "type": "module",
   "bin": {
@@ -9,11 +9,23 @@
   "scripts": {
     "start": "node bin/ai-playbook",
     "install": "node scripts/install-cursor.mjs global",
-    "sync": "node scripts/install-cursor.mjs sync",
     "install-all-ides": "node scripts/install-all-ides.mjs all",
-    "export-roles": "node scripts/export-roles.mjs all",
+    "export-roles": "node scripts/export-roles.mjs --global",
     "verify-roles": "node scripts/verify-role-exports.mjs",
-    "verify-frontmatter": "node scripts/verify-frontmatter.mjs"
+    "verify-frontmatter": "node scripts/verify-frontmatter.mjs",
+    "verify-skill-resolver": "node scripts/verify-skill-resolver.mjs",
+    "audit:static": "node scripts/audit/static-scan.mjs",
+    "audit:pipelines": "bash scripts/audit/find-duplicate-pipelines.sh",
+    "audit:commands": "bash scripts/audit/list-exported-commands.sh",
+    "eval": "node scripts/eval/run-eval.mjs",
+    "eval:smoke": "node scripts/eval/smoke-per-command.mjs",
+    "eval:smoke:phase2": "node scripts/eval/smoke-phase-2.mjs",
+    "eval:smoke:phase3": "node scripts/eval/smoke-phase-3.mjs",
+    "eval:smoke:phase4": "node scripts/eval/smoke-phase-4.mjs",
+    "eval:smoke:phase5": "node scripts/eval/smoke-phase-5.mjs",
+    "eval:smoke:phase6": "node scripts/eval/smoke-phase-6.mjs",
+    "eval:smoke:phases": "node scripts/eval/smoke-all-phases.mjs",
+    "eval:all": "node scripts/eval/run-all.mjs"
   },
   "dependencies": {
     "commander": "^11.1.0"

@@ -1,7 +1,27 @@
-# ROLE: End User / Client Persona
-@trigger "user", "client", "customer", "persona", "usability", "end-user"
-@priority 90
-
+---
+id: roles/end-user
+kind: role
+name: end-user
+title: End User Advocate
+description: end user advocate
+command: celestial-end-user
+scope: global
+type: command
+triggers: [user, client, customer, persona, usability, end-user]
+token_budget: 800
+targets:
+  cursor:
+    enabled: true
+    type: command
+  claude:
+    enabled: true
+    type: command
+  copilot:
+    enabled: true
+    type: prompt
+  antigravity:
+    enabled: true
+    type: preset
 ---
 
 ## System Prompt Directive

@@ -1,7 +1,27 @@
-# ROLE: DevOps / Platform Engineer
-@trigger "deploy", "ci", "cd", "docker", "k8s", "kubernetes", "terraform", "pipeline", "monitoring", "infra", "infrastructure", "helm", "github-actions"
-@priority 90
-
+---
+id: roles/devops
+kind: role
+name: devops
+title: DevOps Engineer
+description: devops engineer
+command: celestial-devops
+scope: global
+type: command
+triggers: [deploy, ci, cd, docker, k8s, kubernetes, terraform, pipeline, monitoring, infra, infrastructure, helm, github-actions]
+token_budget: 800
+targets:
+  cursor:
+    enabled: true
+    type: command
+  claude:
+    enabled: true
+    type: command
+  copilot:
+    enabled: true
+    type: prompt
+  antigravity:
+    enabled: true
+    type: preset
 ---
 
 ## System Prompt Directive

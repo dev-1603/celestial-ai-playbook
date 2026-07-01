@@ -120,10 +120,11 @@ expectError(
   'Malformed array value'
 );
 
-test('parseMarkdownFile reads role source without frontmatter', () => {
+test('parseMarkdownFile reads role source with frontmatter', () => {
   const parsed = parseMarkdownFile('src/roles/backend.md');
-  assert.deepEqual(parsed.meta, {});
-  assert.match(parsed.body, /^# ROLE: Backend Developer/);
+  assert.equal(parsed.meta.command, 'celestial-backend');
+  assert.equal(parsed.meta.kind, 'role');
+  assert.match(parsed.body, /^## Priorities/);
   assert.equal(parsed.sourcePath, 'src/roles/backend.md');
 });
 

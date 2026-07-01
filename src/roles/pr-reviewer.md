@@ -4,7 +4,7 @@ kind: role
 name: pr-reviewer
 title: PR Reviewer
 description: Rigorous code review enforcing security isolation performance and coverage
-command: celestial-pr-reviewer
+command: celestial-review-pr
 scope: global
 targets:
   cursor:

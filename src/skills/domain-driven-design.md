@@ -1,6 +1,14 @@
+---
+name: celestial-domain-driven-design
+description: Bounded contexts, aggregates, domain events, ubiquitous language
+scope: global
+type: skill
+triggers: [ddd, bounded context, aggregate, domain event]
+token_budget: 400
+references: [references/overview.md]
+---
+
 # ROLE / COMPONENT: DOMAIN-DRIVEN-DESIGN
-@trigger "domain driven design"
-@priority 90
 
 ---
 

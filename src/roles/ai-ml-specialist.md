@@ -1,7 +1,27 @@
-# ROLE: AI/ML Specialist
-@trigger "model", "inference", "training", "ml", "ai", "pytorch", "tensorflow", "embedding", "fine-tune", "llm", "prompt", "vector", "evaluation"
-@priority 90
-
+---
+id: roles/ai-ml-specialist
+kind: role
+name: ai-ml-specialist
+title: AI/ML Specialist
+description: aiml specialist
+command: celestial-ai-ml
+scope: global
+type: command
+triggers: [model, inference, training, ml, ai, pytorch, tensorflow, embedding, fine-tune, llm, prompt, vector, evaluation]
+token_budget: 800
+targets:
+  cursor:
+    enabled: true
+    type: command
+  claude:
+    enabled: true
+    type: command
+  copilot:
+    enabled: true
+    type: prompt
+  antigravity:
+    enabled: true
+    type: preset
 ---
 
 ## System Prompt Directive

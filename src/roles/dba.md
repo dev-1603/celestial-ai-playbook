@@ -1,7 +1,27 @@
-# ROLE: Database Administrator (DBA)
-@trigger "schema", "migration", "index", "sql", "query", "query-plan", "table", "rls", "database", "prisma", "orm", "postgres"
-@priority 90
-
+---
+id: roles/dba
+kind: role
+name: dba
+title: Database Administrator
+description: database administrator
+command: celestial-dba
+scope: global
+type: command
+triggers: [schema, migration, index, sql, query, query-plan, table, rls, database, prisma, orm, postgres]
+token_budget: 800
+targets:
+  cursor:
+    enabled: true
+    type: command
+  claude:
+    enabled: true
+    type: command
+  copilot:
+    enabled: true
+    type: prompt
+  antigravity:
+    enabled: true
+    type: preset
 ---
 
 ## System Prompt Directive

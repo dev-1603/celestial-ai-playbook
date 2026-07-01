@@ -16,11 +16,16 @@ export function stripPlaybookMetadata(content) {
 }
 
 export function readComponent(repoRoot, componentKey) {
-  const filePath = path.join(repoRoot, 'src', `${componentKey}.md`);
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`Component not found: src/${componentKey}.md`);
+  const flatPath = path.join(repoRoot, 'src', `${componentKey}.md`);
+  const skillMdPath = path.join(repoRoot, 'src', componentKey, 'SKILL.md');
+
+  if (fs.existsSync(skillMdPath)) {
+    return fs.readFileSync(skillMdPath, 'utf-8');
   }
-  return fs.readFileSync(filePath, 'utf-8');
+  if (fs.existsSync(flatPath)) {
+    return fs.readFileSync(flatPath, 'utf-8');
+  }
+  throw new Error(`Component not found: src/${componentKey}.md or src/${componentKey}/SKILL.md`);
 }
 
 export function buildRuleMdc(componentKey, config, content) {

@@ -4,211 +4,95 @@ import fs from 'fs';
 import path from 'path';
 import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
+import { cliResult } from '../scripts/lib/global-paths.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.resolve(__dirname, '..');
 const SRC_DIR = path.join(REPO_ROOT, 'src');
+const VERSION = '3.0.0';
 
 const args = process.argv.slice(2);
 const command = args[0];
 
-if (!command || command === 'help') {
+function help() {
   console.log(`
-Celestial AI Context Orchestrator v2.0.0
+Celestial AI Context Orchestrator v${VERSION}
 
 Usage: ai-playbook <command> [args]
 
 Commands:
-  validate                   Validate the playbook structure
-  list [category]            List available components
-  switch <role>              Generate flat context files (.cursorrules, .claudecoderules)
-  create <category> <name>   Scaffold a new playbook component
-  remove <category> <name>   Remove a component (use "all" to clear category)
-  export                     Export rules to current project (.cursor/rules) using manifest taxonomy
-  install                    Install global commands, skills, and rules to ~/.cursor/
-  sync                       Copy all playbook rules to current project's .cursor/rules/
-  manifest                   Show component taxonomy (rules vs skills vs commands)
-  install-all                Install/sync for Cursor, Claude, Copilot, and Antigravity
-  export-claude              Export to CLAUDE.md (Claude Code context)
-  export-copilot             Export to .github/copilot-instructions.md
-  export-antigravity         Export to .rules/ directory
-  export-roles               Export src/roles to all IDE targets (cursor, claude, copilot, antigravity)
-    --target <t>               Filter to one target (e.g. --target cursor)
-    --project <dir>            Write into <dir> instead of cwd
-  verify-roles               Run role export verification checks
-  `);
+  install                         Global install: Cursor rules, skills, commands (~/.cursor/)
+  install-all [targets]           Global install for all IDEs (cursor, claude, copilot, antigravity, roles)
+  generate-rules <abs-path>       Generate project-local rules via orchestrator-workers workflow
+    --selectors /role/x /lang/y   Required selectors (max 8)
+  export-roles                    Export roles globally to all IDE command dirs
+    --target <t>                  Filter target (cursor, claude, copilot, antigravity)
+    --project <abs-path>          Explicit project path (opt-in; default is global)
+  manifest                        Show component taxonomy
+  validate                        Validate playbook structure
+  list [category]                 List available components
+  create <category> <name>        Scaffold a new playbook component
+  remove <category> <name>        Remove a component
+  verify-roles                    Run role export verification
+  verify-frontmatter              Run frontmatter parser tests
+  verify-skill-resolver           Run skill resolver JIT tests
+  eval                            Run full eval suite
+  help                            Show this help
+`);
+}
+
+function runScript(scriptRel, scriptArgs = []) {
+  const scriptPath = path.join(REPO_ROOT, scriptRel);
+  if (!fs.existsSync(scriptPath)) {
+    console.error(`ERROR: Script not found: ${scriptPath}`);
+    process.exit(1);
+  }
+  const result = spawnSync('node', [scriptPath, ...scriptArgs], { stdio: 'inherit' });
+  process.exit(result.status ?? 1);
+}
+
+function scanComponents(dirPath) {
+  if (!fs.existsSync(dirPath)) return [];
+  return fs.readdirSync(dirPath, { withFileTypes: true })
+    .filter(e => e.isFile() && e.name.endsWith('.md'))
+    .map(e => e.name.replace('.md', ''))
+    .sort();
+}
+
+if (!command || command === 'help') {
+  help();
   process.exit(0);
 }
 
-// Dynamic directory scanner
-function scanComponents(dirPath) {
-  if (!fs.existsSync(dirPath)) return [];
-  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
-  const components = [];
-
-  for (const entry of entries) {
-    if (entry.isFile() && entry.name.endsWith('.md')) {
-      const content = fs.readFileSync(path.join(dirPath, entry.name), 'utf-8');
-      
-      const triggerMatch = content.match(/@trigger\s+(.+)/);
-      const priorityMatch = content.match(/@priority\s+(\d+)/);
-      
-      if (triggerMatch) {
-        components.push({
-          name: entry.name.replace('.md', ''),
-          path: path.join(dirPath, entry.name),
-          triggers: triggerMatch[1].replace(/"/g, '').split(',').map(t => t.trim()),
-          priority: priorityMatch ? parseInt(priorityMatch[1], 10) : 50,
-          type: path.basename(dirPath)
-        });
-      }
-    }
-  }
-  return components.sort((a, b) => b.priority - a.priority);
-}
-
-function loadProjectConfig() {
-  const configPath = path.join(process.cwd(), '.ai-playbook.json');
-  if (!fs.existsSync(configPath)) {
-    console.error('Error: .ai-playbook.json not found in current directory.');
-    process.exit(1);
-  }
-  return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-}
-
 switch (command) {
-  case 'list': {
-    const category = args[1];
-    
-    if (category && category !== 'all') {
-      const targetDir = path.join(SRC_DIR, category);
-      const components = scanComponents(targetDir);
-      console.log(`\nAvailable ${category.toUpperCase()}:`);
-      components.forEach(c => console.log(` - ${c.name} (Priority: ${c.priority})`));
-    } else {
-      const dirs = fs.readdirSync(SRC_DIR, { withFileTypes: true }).filter(d => d.isDirectory());
-      for (const dir of dirs) {
-        console.log(`\n--- ${dir.name.toUpperCase()} ---`);
-        const components = scanComponents(path.join(SRC_DIR, dir.name));
-        components.forEach(c => console.log(` - ${c.name}`));
-      }
+  case 'install':
+    runScript('scripts/install-cursor.mjs', ['global']);
+    break;
+
+  case 'install-all':
+    runScript('scripts/install-all-ides.mjs', args.slice(1));
+    break;
+
+  case 'generate-rules': {
+    const projectArg = args[1];
+    if (!projectArg || projectArg.startsWith('--')) {
+      process.exit(cliResult(false, 'Usage: generate-rules <abs-project-path> --selectors /role/x ...'));
     }
+    const absProject = path.resolve(projectArg);
+    if (!path.isAbsolute(absProject)) {
+      process.exit(cliResult(false, 'Project path must be absolute'));
+    }
+    runScript('scripts/project-rule-generator/index.mjs', args.slice(1));
     break;
   }
 
-  case 'switch': {
-    const roleName = args[1];
-    if (!roleName) {
-      console.error('Error: Please provide a role name. (e.g., ai-playbook switch backend)');
-      process.exit(1);
-    }
-    const config = loadProjectConfig();
-    const allRoles = scanComponents(path.join(SRC_DIR, 'roles'));
-    const targetRole = allRoles.find(r => r.name === roleName);
-    
-    if (!targetRole) {
-      console.error(`Error: Role '${roleName}' not found.`);
-      process.exit(1);
-    }
-
-    let combinedContext = '';
-    
-    const globalPath = path.join(SRC_DIR, 'base', 'global-rules.md');
-    if (fs.existsSync(globalPath)) {
-      combinedContext += fs.readFileSync(globalPath, 'utf-8') + '\n\n';
-    }
-
-    if (config.architecture) {
-      for (const arch of config.architecture) {
-        const archPath = path.join(SRC_DIR, 'architecture', `${arch}.md`);
-        if (fs.existsSync(archPath)) {
-          combinedContext += fs.readFileSync(archPath, 'utf-8') + '\n\n';
-        }
-      }
-    }
-
-    combinedContext += fs.readFileSync(targetRole.path, 'utf-8') + '\n\n';
-
-    if (config.outputTargets?.includes('.claudecoderules')) {
-      fs.writeFileSync(path.join(process.cwd(), '.claudecoderules'), combinedContext);
-      console.log(`Generated .claudecoderules for role: ${roleName}`);
-    }
-    
-    if (config.outputTargets?.includes('.cursorrules')) {
-      fs.writeFileSync(path.join(process.cwd(), '.cursorrules'), combinedContext);
-      console.log(`Generated .cursorrules for role: ${roleName}`);
-    }
+  case 'export-roles':
+    runScript('scripts/export-roles.mjs', ['--global', ...args.slice(1)]);
     break;
-  }
-
-  case 'create': {
-    const category = args[1];
-    const name = args[2];
-    if (!category || !name) {
-      console.error('Error: Please provide category and name. (e.g., ai-playbook create skills event-sourcing)');
-      process.exit(1);
-    }
-    const targetDir = path.join(SRC_DIR, category);
-    if (!fs.existsSync(targetDir)) {
-      console.error(`Error: Category '${category}' does not exist.`);
-      process.exit(1);
-    }
-    const targetFile = path.join(targetDir, `${name}.md`);
-    if (fs.existsSync(targetFile)) {
-      console.error(`Error: File '${name}.md' already exists in ${category}.`);
-      process.exit(1);
-    }
-    
-    const template = `# ROLE / COMPONENT: ${name.toUpperCase().replace(/-/g, ' ')}
-@trigger "${name.replace(/-/g, ' ')}"
-@priority 90
-
----
-
-## System Prompt Directive
-
-> **Layer Order:** Layer 6 (Task-Specific Scope)
-> 
-> **You are a Domain-Neutral Engineering Assistant.**
->
-> **Your priorities:** Maintain modularity, security, scalability, and tenant isolation.
-
----
-
-## 1. Dry-Run Protocol (MANDATORY)
-
-Before implementing:
-- [ ] Map out component boundaries
-- [ ] Ensure cross-tenant data isolation is enforced
-- [ ] Verify test coverage strategies are defined
-`;
-    
-    fs.writeFileSync(targetFile, template);
-    console.log(`✅ Created new ${category} template: src/${category}/${name}.md`);
-    break;
-  }
-
-  case 'export':
-  case 'sync': {
-    const scriptPath = path.join(REPO_ROOT, 'scripts', 'install-cursor.mjs');
-    const result = spawnSync('node', [scriptPath, 'sync'], { stdio: 'inherit', cwd: process.cwd() });
-    process.exit(result.status ?? 1);
-  }
-
-  case 'install': {
-    const scriptPath = path.join(REPO_ROOT, 'scripts', 'install-cursor.mjs');
-    if (!fs.existsSync(scriptPath)) {
-      console.error('Error: install-cursor.mjs not found.');
-      process.exit(1);
-    }
-    const result = spawnSync('node', [scriptPath, 'global'], { stdio: 'inherit' });
-    process.exit(result.status ?? 1);
-  }
 
   case 'manifest': {
-    const manifestPath = path.join(REPO_ROOT, 'playbook.manifest.json');
-    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+    const manifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'playbook.manifest.json'), 'utf-8'));
     const byType = { rule: [], skill: [], command: [] };
     for (const [key, config] of Object.entries(manifest.components)) {
       byType[config.type]?.push({ key, ...config });
@@ -222,104 +106,120 @@ Before implementing:
       }
       console.log('');
     }
-    break;
+    console.log('OK: Manifest displayed');
+    process.exit(0);
   }
 
-  case 'install-all': {
-    const scriptPath = path.join(REPO_ROOT, 'scripts', 'install-all-ides.mjs');
-    const result = spawnSync('node', [scriptPath, ...args.slice(1)], {
-      stdio: 'inherit',
-      cwd: process.cwd(),
-    });
-    process.exit(result.status ?? 1);
+  case 'validate': {
+    const dirs = ['base', 'architecture', 'roles', 'languages', 'frameworks', 'design-patterns', 'skills'];
+    let valid = true;
+    for (const dir of dirs) {
+      if (!fs.existsSync(path.join(SRC_DIR, dir))) {
+        console.error(`ERROR: Missing directory: src/${dir}`);
+        valid = false;
+      }
+    }
+    process.exit(valid ? cliResult(true, 'Validation passed') : cliResult(false, 'Validation failed'));
   }
 
-  case 'export-roles': {
-    const scriptPath = path.join(REPO_ROOT, 'scripts', 'export-roles.mjs');
-    const exportArgs = args.slice(1);
-    const result = spawnSync('node', [scriptPath, ...exportArgs], {
-      stdio: 'inherit',
-      cwd: process.cwd(),
-    });
-    process.exit(result.status ?? 1);
+  case 'list': {
+    const category = args[1];
+    if (category && category !== 'all') {
+      const components = scanComponents(path.join(SRC_DIR, category));
+      console.log(`\n${category.toUpperCase()}:`);
+      components.forEach(c => console.log(` - ${c}`));
+    } else {
+      for (const dir of fs.readdirSync(SRC_DIR, { withFileTypes: true }).filter(d => d.isDirectory())) {
+        console.log(`\n--- ${dir.name.toUpperCase()} ---`);
+        scanComponents(path.join(SRC_DIR, dir.name)).forEach(c => console.log(` - ${c}`));
+      }
+    }
+    console.log('OK: List complete');
+    process.exit(0);
   }
 
-  case 'verify-roles': {
-    const scriptPath = path.join(REPO_ROOT, 'scripts', 'verify-role-exports.mjs');
-    const result = spawnSync('node', [scriptPath], { stdio: 'inherit' });
-    process.exit(result.status ?? 1);
-  }
+  case 'create': {
+    const category = args[1];
+    const name = args[2];
+    if (!category || !name) {
+      process.exit(cliResult(false, 'Usage: create <category> <name>'));
+    }
+    const targetDir = path.join(SRC_DIR, category);
+    if (!fs.existsSync(targetDir)) {
+      process.exit(cliResult(false, `Category '${category}' does not exist`));
+    }
+    const targetFile = path.join(targetDir, `${name}.md`);
+    if (fs.existsSync(targetFile)) {
+      process.exit(cliResult(false, `File already exists: src/${category}/${name}.md`));
+    }
+    fs.writeFileSync(targetFile, `---
+name: ${name}
+description: TODO
+scope: global
+type: rule
+triggers: [${name}]
+token_budget: 400
+---
 
-  case 'export-claude':
-  case 'export-copilot':
-  case 'export-antigravity': {
-    const target = command.replace('export-', '');
-    const scriptPath = path.join(REPO_ROOT, 'scripts', 'install-multi-ide.mjs');
-    const result = spawnSync('node', [scriptPath, target], {
-      stdio: 'inherit',
-      cwd: process.cwd(),
-    });
-    process.exit(result.status ?? 1);
-  }
+## TODO
 
-  case 'install-skills': {
-    console.warn('Deprecated: use "ai-playbook install" instead.\n');
-    const scriptPath = path.join(REPO_ROOT, 'scripts', 'install-cursor.mjs');
-    const result = spawnSync('node', [scriptPath, 'global'], { stdio: 'inherit' });
-    process.exit(result.status ?? 1);
+Scaffold — add real content.
+`);
+    console.log(`OK: Created src/${category}/${name}.md`);
+    process.exit(0);
   }
 
   case 'remove': {
     const category = args[1];
     const name = args[2];
     if (!category || !name) {
-      console.error('Error: Please provide category and name. (e.g., ai-playbook remove skills event-sourcing)');
-      process.exit(1);
+      process.exit(cliResult(false, 'Usage: remove <category> <name>'));
     }
     const targetDir = path.join(SRC_DIR, category);
-    if (!fs.existsSync(targetDir)) {
-      console.error(`Error: Category '${category}' does not exist.`);
-      process.exit(1);
-    }
-    
     if (name === 'all') {
-      const files = fs.readdirSync(targetDir);
       let count = 0;
-      for (const file of files) {
-        if (file.endsWith('.md')) {
-          fs.unlinkSync(path.join(targetDir, file));
-          count++;
-        }
+      for (const file of fs.readdirSync(targetDir)) {
+        if (file.endsWith('.md')) { fs.unlinkSync(path.join(targetDir, file)); count++; }
       }
-      console.log(`🗑️ Removed all ${count} templates from src/${category}/`);
+      console.log(`OK: Removed ${count} files from src/${category}/`);
     } else {
       const targetFile = path.join(targetDir, `${name}.md`);
       if (!fs.existsSync(targetFile)) {
-        console.error(`Error: File '${name}.md' not found in ${category}.`);
-        process.exit(1);
+        process.exit(cliResult(false, `File not found: src/${category}/${name}.md`));
       }
       fs.unlinkSync(targetFile);
-      console.log(`🗑️ Removed ${category} template: src/${category}/${name}.md`);
+      console.log(`OK: Removed src/${category}/${name}.md`);
     }
-    break;
+    process.exit(0);
   }
 
-  case 'validate': {
-    console.log('Validating celestial-ai-playbook structure...');
-    const dirs = ['base', 'architecture', 'roles', 'languages', 'frameworks', 'design-patterns', 'skills'];
-    let valid = true;
-    for (const dir of dirs) {
-      const p = path.join(SRC_DIR, dir);
-      if (!fs.existsSync(p)) {
-        console.error(`Missing directory: src/${dir}`);
-        valid = false;
-      }
-    }
-    if (valid) console.log('Validation passed!');
+  case 'verify-roles':
+    runScript('scripts/verify-role-exports.mjs');
     break;
-  }
+
+  case 'verify-frontmatter':
+    runScript('scripts/verify-frontmatter.mjs');
+    break;
+
+  case 'verify-skill-resolver':
+    runScript('scripts/verify-skill-resolver.mjs');
+    break;
+
+  case 'eval':
+    runScript('scripts/eval/run-eval.mjs');
+    break;
+
+  // Deprecated — explicit errors
+  case 'sync':
+  case 'export':
+    process.exit(cliResult(false, `'${command}' removed. Use 'generate-rules <abs-path> --selectors ...'`));
+  case 'switch':
+    process.exit(cliResult(false, `'switch' removed. Use 'generate-rules <abs-path> --selectors /role/<name> /base'`));
+  case 'export-claude':
+  case 'export-copilot':
+  case 'export-antigravity':
+    process.exit(cliResult(false, `'${command}' removed. Use 'install-all' for global multi-IDE install'`));
 
   default:
-    console.error(`Error: Unknown command '${command}'`);
-    process.exit(1);
+    process.exit(cliResult(false, `Unknown command '${command}'. Run 'ai-playbook help'.`));
 }

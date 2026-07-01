@@ -1,7 +1,27 @@
-# ROLE: Go Engineer
-@trigger "go", "golang", "goroutine", "gRPC", "concurrency", "channel", "interface", "context", "go routine"
-@priority 90
-
+---
+id: roles/go-engineer
+kind: role
+name: go-engineer
+title: Go Engineer
+description: go engineer
+command: celestial-go
+scope: global
+type: command
+triggers: [go, golang, goroutine, gRPC, concurrency, channel, interface, context]
+token_budget: 800
+targets:
+  cursor:
+    enabled: true
+    type: command
+  claude:
+    enabled: true
+    type: command
+  copilot:
+    enabled: true
+    type: prompt
+  antigravity:
+    enabled: true
+    type: preset
 ---
 
 ## System Prompt Directive

@@ -56,21 +56,22 @@ assert(pr !== undefined, 'pr-reviewer role found');
 assert(pr.title === 'PR Reviewer', `pr-reviewer title from frontmatter: "${pr.title}"`);
 assert(pr.description === 'Rigorous code review enforcing security isolation performance and coverage',
   `pr-reviewer description from frontmatter`);
-assert(pr.command === 'celestial-pr-reviewer', `pr-reviewer command: ${pr.command}`);
+assert(pr.command === 'celestial-review-pr', `pr-reviewer command: ${pr.command}`);
 assert(pr.targets.cursor.type === 'command', `pr-reviewer cursor type from frontmatter: "${pr.targets.cursor.type}"`);
 assert(pr.targets.copilot.type === 'prompt', `pr-reviewer copilot type from frontmatter: "${pr.targets.copilot.type}"`);
 assert(pr.targets.antigravity.type === 'preset', `pr-reviewer antigravity type from frontmatter: "${pr.targets.antigravity.type}"`);
 
-// backend has NO frontmatter — all fallback
+// backend has frontmatter
 const be = roles.find(r => r.id === 'roles/backend');
 assert(be !== undefined, 'backend role found');
-assert(be.kind === 'role', `backend kind fallback: "${be.kind}"`);
-assert(be.name === 'backend', `backend name fallback: "${be.name}"`);
-assert(be.command === 'celestial-backend', `backend command fallback: "${be.command}"`);
-assert(be.scope === 'global', `backend scope fallback: "${be.scope}"`);
-assert(be.targets.cursor.enabled === true, 'backend cursor.enabled fallback: true');
-assert(be.targets.copilot.type === 'prompt', `backend copilot.type fallback: "${be.targets.copilot.type}"`);
-assert(be.description.length > 0, `backend description fallback extracted: "${be.description}"`);
+assert(be.kind === 'role', `backend kind: "${be.kind}"`);
+assert(be.name === 'backend', `backend name: "${be.name}"`);
+assert(be.command === 'celestial-backend', `backend command: "${be.command}"`);
+assert(be.scope === 'global', `backend scope: "${be.scope}"`);
+assert(be.targets.cursor.enabled === true, 'backend cursor.enabled: true');
+assert(be.targets.copilot.type === 'prompt', `backend copilot.type: "${be.targets.copilot.type}"`);
+assert(be.description.length > 0, `backend description: "${be.description}"`);
+assert(be.body.includes('## Priorities'), 'backend body is heuristic format');
 
 // ── Test 2: Renderers produce correct format ─────────────────────────
 
@@ -89,7 +90,7 @@ assert(claudeOut.includes('disable-model-invocation: true'), 'Claude output has 
 assert(claudeOut.includes('description: "Rigorous code review'), 'Claude output has description in frontmatter');
 
 const copilotOut = render('copilot', pr);
-assert(copilotOut.includes('name: celestial-pr-reviewer'), 'Copilot output has name field');
+assert(copilotOut.includes('name: celestial-review-pr'), 'Copilot output has name field');
 assert(copilotOut.includes('agent: agent'), 'Copilot output has agent field');
 
 const antiOut = render('antigravity', pr);
@@ -114,14 +115,14 @@ const expectedPaths = {
 };
 
 for (const target of ['cursor', 'claude', 'copilot', 'antigravity']) {
-  const result = exportTarget(target, roles, tmpDir);
+  const result = exportTarget(target, roles, { global: false, projectDir: tmpDir });
   const expDir = path.join(tmpDir, ...expectedPaths[target]);
   
   assert(fs.existsSync(expDir), `${target}: output directory created at ${expectedPaths[target].join('/')}`);
   assert(result.written.length === 13, `${target}: wrote ${result.written.length} files (expected 13)`);
   
   // Spot-check pr-reviewer file exists
-  const prFile = result.written.find(w => w.command === 'celestial-pr-reviewer');
+  const prFile = result.written.find(w => w.command === 'celestial-review-pr');
   assert(prFile !== undefined, `${target}: pr-reviewer file in results`);
   assert(fs.existsSync(prFile.outPath), `${target}: pr-reviewer file exists on disk`);
   
@@ -144,7 +145,7 @@ const singleDir = path.join(REPO_ROOT, '.tmp-export-single');
 if (fs.existsSync(singleDir)) fs.rmSync(singleDir, { recursive: true });
 fs.mkdirSync(singleDir, { recursive: true });
 
-exportTarget('cursor', roles, singleDir);
+exportTarget('cursor', roles, { global: false, projectDir: singleDir });
 
 assert(fs.existsSync(path.join(singleDir, '.cursor', 'commands')), 'cursor dir created');
 assert(!fs.existsSync(path.join(singleDir, '.claude')), '.claude NOT created');
@@ -208,8 +209,8 @@ for (const d of [det1, det2]) {
   fs.mkdirSync(d, { recursive: true });
 }
 
-exportTarget('cursor', roles, det1);
-exportTarget('cursor', roles, det2);
+exportTarget('cursor', roles, { global: false, projectDir: det1 });
+exportTarget('cursor', roles, { global: false, projectDir: det2 });
 
 const files1 = fs.readdirSync(path.join(det1, '.cursor', 'commands')).sort();
 const files2 = fs.readdirSync(path.join(det2, '.cursor', 'commands')).sort();
