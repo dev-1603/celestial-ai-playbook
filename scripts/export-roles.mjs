@@ -54,6 +54,8 @@ function resolveTargets(requested) {
 
 function artifactFilename(target, role) {
   if (target === 'copilot') return `${role.command}.prompt.md`;
+  // Antigravity personas are Skills: <command>/SKILL.md
+  if (target === 'antigravity') return path.join(role.command, 'SKILL.md');
   return `${role.command}.md`;
 }
 
@@ -62,7 +64,7 @@ function instructionIntro(role) {
 }
 
 function renderCursor(role) {
-  return [GENERATED_NOTICE, '', `# ${role.title}`, '', instructionIntro(role), '', '---', '', role.body].join('\n');
+  return [`# ${role.title}`, '', instructionIntro(role), '', '---', '', role.body, '', GENERATED_NOTICE].join('\n');
 }
 
 function renderClaude(role) {
@@ -72,8 +74,6 @@ function renderClaude(role) {
     'disable-model-invocation: true',
     '---',
     '',
-    GENERATED_NOTICE,
-    '',
     `# ${role.title}`,
     '',
     instructionIntro(role),
@@ -81,6 +81,8 @@ function renderClaude(role) {
     '---',
     '',
     role.body,
+    '',
+    GENERATED_NOTICE,
   ].join('\n');
 }
 
@@ -92,8 +94,6 @@ function renderCopilot(role) {
     'agent: agent',
     '---',
     '',
-    GENERATED_NOTICE,
-    '',
     `# ${role.title}`,
     '',
     instructionIntro(role),
@@ -101,19 +101,20 @@ function renderCopilot(role) {
     '---',
     '',
     role.body,
+    '',
+    GENERATED_NOTICE,
   ].join('\n');
 }
 
 function renderAntigravity(role) {
+  const skillDescription =
+    `${role.title} persona. ${role.description}. ` +
+    `Trigger when the task involves ${role.title.toLowerCase()} responsibilities.`;
   return [
     '---',
     `name: ${role.command}`,
-    `title: ${JSON.stringify(role.title)}`,
-    `description: ${JSON.stringify(role.description)}`,
-    'type: preset',
+    `description: ${JSON.stringify(skillDescription)}`,
     '---',
-    '',
-    GENERATED_NOTICE,
     '',
     `# ${role.title}`,
     '',
@@ -122,6 +123,8 @@ function renderAntigravity(role) {
     '---',
     '',
     role.body,
+    '',
+    GENERATED_NOTICE,
   ].join('\n');
 }
 
@@ -148,6 +151,7 @@ export function exportTarget(target, roles, { global = true, projectDir = proces
     if (!role.targets[target]?.enabled) continue;
     const filename = artifactFilename(target, role);
     const outPath = path.join(dir, filename);
+    ensureDir(path.dirname(outPath));
     fs.writeFileSync(outPath, render(target, role));
     written.push({ role: role.name, command: role.command, filename, outPath });
   }

@@ -23,7 +23,7 @@ import { parseMarkdownFile } from './frontmatter.mjs';
  *   cursor:      { enabled: boolean, type: "command" | "skill" }
  *   claude:      { enabled: boolean, type: "command" }
  *   copilot:     { enabled: boolean, type: "prompt" }
- *   antigravity: { enabled: boolean, type: "preset" }
+ *   antigravity: { enabled: boolean, type: "skill" }
  */
 export const ROLE_SCHEMA = {
   fields: ['id', 'kind', 'name', 'title', 'description', 'command', 'scope', 'targets'],
@@ -34,14 +34,14 @@ export const ROLE_SCHEMA = {
       cursor:      { enabled: true, type: 'command' },
       claude:      { enabled: true, type: 'command' },
       copilot:     { enabled: true, type: 'prompt'  },
-      antigravity: { enabled: true, type: 'preset'  },
+      antigravity: { enabled: true, type: 'skill'  },
     },
   },
   targetTypes: {
     cursor:      ['command', 'skill'],
     claude:      ['command'],
     copilot:     ['prompt'],
-    antigravity: ['preset'],
+    antigravity: ['skill'],
   },
 };
 

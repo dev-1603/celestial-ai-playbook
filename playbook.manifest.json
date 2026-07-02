@@ -16,7 +16,7 @@
       "cursorTarget": "~/.cursor/commands/*.md or .cursor/commands/*.md",
       "claudeTarget": ".claude/commands/*.md",
       "copilotTarget": ".github/prompts/*.prompt.md",
-      "antigravityTarget": ".agent/presets/*.md (experimental)",
+      "antigravityTarget": "~/.gemini/config/skills/<name>/SKILL.md (global) or .agents/skills/<name>/SKILL.md (project) — Antigravity has no /slash commands; personas are Skills",
       "scope": "Role personas exported from src/roles/*.md",
       "when": "Persona switches and repeatable workflows (backend, PR review, architect)"
     }

@@ -8,7 +8,8 @@ import path from 'path';
 /**
  * @param {string} [homeDir]
  */
-export function getGlobalPaths(homeDir = os.homedir()) {
+export function getGlobalPaths(homeDir) {
+  homeDir = homeDir || os.homedir();
   const celestialRoot = path.join(homeDir, '.cursor', 'celestial-playbook');
   return {
     home: homeDir,
@@ -26,9 +27,13 @@ export function getGlobalPaths(homeDir = os.homedir()) {
       prompts: path.join(homeDir, '.github', 'prompts'),
       instructions: path.join(celestialRoot, 'copilot', 'copilot-instructions.md'),
     },
+    // Antigravity discovers global customizations under ~/.gemini/config/.
+    // Rules append to config/AGENTS.md; roles/personas are Skills, each a
+    // config/skills/<name>/SKILL.md with name+description frontmatter.
+    // Antigravity has no custom /slash commands — everything is a Skill.
     antigravity: {
-      presets: path.join(homeDir, '.agent', 'presets'),
-      rules: path.join(celestialRoot, 'antigravity', 'rules'),
+      globalRules: path.join(homeDir, '.gemini', 'config', 'AGENTS.md'),
+      skills: path.join(homeDir, '.gemini', 'config', 'skills'),
     },
   };
 }
@@ -39,7 +44,8 @@ export function getGlobalPaths(homeDir = os.homedir()) {
  * @param {{ global?: boolean, projectDir?: string, homeDir?: string }} opts
  */
 export function resolveRoleOutputDir(target, opts = {}) {
-  const { global = true, projectDir = process.cwd(), homeDir = os.homedir() } = opts;
+  const { global = true, projectDir = process.cwd() } = opts;
+  const homeDir = opts.homeDir || os.homedir();
   const paths = getGlobalPaths(homeDir);
 
   if (global) {
@@ -47,7 +53,7 @@ export function resolveRoleOutputDir(target, opts = {}) {
       case 'cursor': return paths.cursor.commands;
       case 'claude': return paths.claude.commands;
       case 'copilot': return paths.copilot.prompts;
-      case 'antigravity': return paths.antigravity.presets;
+      case 'antigravity': return paths.antigravity.skills;
       default: throw new Error(`Unknown target: ${target}`);
     }
   }
@@ -56,7 +62,7 @@ export function resolveRoleOutputDir(target, opts = {}) {
     case 'cursor': return path.join(projectDir, '.cursor', 'commands');
     case 'claude': return path.join(projectDir, '.claude', 'commands');
     case 'copilot': return path.join(projectDir, '.github', 'prompts');
-    case 'antigravity': return path.join(projectDir, '.agent', 'presets');
+    case 'antigravity': return path.join(projectDir, '.agents', 'skills');
     default: throw new Error(`Unknown target: ${target}`);
   }
 }

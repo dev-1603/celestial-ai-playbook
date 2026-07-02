@@ -162,7 +162,7 @@ Same `src/` content, global install targets per IDE:
 | **Cursor** | `ai-playbook install` | `~/.cursor/commands/`, `~/.cursor/skills/`, `~/.cursor/celestial-playbook/rules/` |
 | **Claude Code** | `ai-playbook install-all` | `~/.claude/commands/`, `~/.cursor/celestial-playbook/claude/CLAUDE.md` |
 | **GitHub Copilot** | `ai-playbook install-all` | `~/.github/prompts/`, `~/.cursor/celestial-playbook/copilot/copilot-instructions.md` |
-| **Antigravity** | `ai-playbook install-all` | `~/.agent/presets/`, `~/.cursor/celestial-playbook/antigravity/rules/` |
+| **Antigravity** | `ai-playbook install-all` | `~/.gemini/config/skills/<name>/SKILL.md`, `~/.gemini/config/AGENTS.md` |
 
 Role exports use YAML frontmatter from `src/roles/*.md` via `export-roles` (defaults to global paths):
 

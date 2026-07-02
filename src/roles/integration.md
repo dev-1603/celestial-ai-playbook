@@ -21,7 +21,7 @@ targets:
     type: prompt
   antigravity:
     enabled: true
-    type: preset
+    type: skill
 ---
 
 ## Priorities

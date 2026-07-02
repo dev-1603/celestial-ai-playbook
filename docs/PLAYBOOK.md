@@ -11,7 +11,7 @@ Supports **Cursor**, **Claude Code**, **GitHub Copilot**, and **Antigravity** fr
 | **Cursor** | `ai-playbook install` | `~/.cursor/celestial-playbook/rules/` | `~/.cursor/commands/` | `~/.cursor/skills/` |
 | **Claude Code** | `ai-playbook install-all` | `~/.cursor/celestial-playbook/claude/CLAUDE.md` | `~/.claude/commands/` | — |
 | **GitHub Copilot** | `ai-playbook install-all` | `~/.cursor/celestial-playbook/copilot/copilot-instructions.md` | `~/.github/prompts/` | — |
-| **Antigravity** | `ai-playbook install-all` | `~/.cursor/celestial-playbook/antigravity/rules/` | `~/.agent/presets/` | — |
+| **Antigravity** | `ai-playbook install-all` | `~/.gemini/config/AGENTS.md` | `~/.gemini/config/skills/<name>/SKILL.md` | roles are Skills |
 
 **Removed in v3:** `sync`, `export-claude`, `export-copilot`, `export-antigravity` (project writes). Use `generate-rules` for project-local rules.
 

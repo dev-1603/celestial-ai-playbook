@@ -59,7 +59,7 @@ assert(pr.description === 'Rigorous code review enforcing security isolation per
 assert(pr.command === 'celestial-review-pr', `pr-reviewer command: ${pr.command}`);
 assert(pr.targets.cursor.type === 'command', `pr-reviewer cursor type from frontmatter: "${pr.targets.cursor.type}"`);
 assert(pr.targets.copilot.type === 'prompt', `pr-reviewer copilot type from frontmatter: "${pr.targets.copilot.type}"`);
-assert(pr.targets.antigravity.type === 'preset', `pr-reviewer antigravity type from frontmatter: "${pr.targets.antigravity.type}"`);
+assert(pr.targets.antigravity.type === 'skill', `pr-reviewer antigravity type from frontmatter: "${pr.targets.antigravity.type}"`);
 
 // backend has frontmatter
 const be = roles.find(r => r.id === 'roles/backend');
@@ -94,8 +94,8 @@ assert(copilotOut.includes('name: celestial-review-pr'), 'Copilot output has nam
 assert(copilotOut.includes('agent: agent'), 'Copilot output has agent field');
 
 const antiOut = render('antigravity', pr);
-assert(antiOut.includes('type: preset'), 'Antigravity output has type: preset');
-assert(antiOut.includes(`title: "PR Reviewer"`), 'Antigravity output has title');
+assert(antiOut.includes('name: celestial-review-pr'), 'Antigravity SKILL has name field');
+assert(antiOut.includes('description:') && antiOut.includes('PR Reviewer persona'), 'Antigravity SKILL has descriptive description for trigger-matching');
 
 // ── Test 3: Export to temp directory — all targets ───────────────────
 
@@ -111,7 +111,7 @@ const expectedPaths = {
   cursor:      ['.cursor', 'commands'],
   claude:      ['.claude', 'commands'],
   copilot:     ['.github', 'prompts'],
-  antigravity: ['.agent', 'presets'],
+  antigravity: ['.agents', 'skills'],
 };
 
 for (const target of ['cursor', 'claude', 'copilot', 'antigravity']) {
@@ -133,7 +133,7 @@ for (const target of ['cursor', 'claude', 'copilot', 'antigravity']) {
 
 // Verify no unrelated files were created
 const topLevelEntries = fs.readdirSync(tmpDir);
-const expectedTopLevel = new Set(['.cursor', '.claude', '.github', '.agent']);
+const expectedTopLevel = new Set(['.cursor', '.claude', '.github', '.agents']);
 const unexpected = topLevelEntries.filter(e => !expectedTopLevel.has(e));
 assert(unexpected.length === 0, `No unrelated files created (found: ${unexpected.length > 0 ? unexpected.join(', ') : 'none'})`);
 
@@ -150,7 +150,7 @@ exportTarget('cursor', roles, { global: false, projectDir: singleDir });
 assert(fs.existsSync(path.join(singleDir, '.cursor', 'commands')), 'cursor dir created');
 assert(!fs.existsSync(path.join(singleDir, '.claude')), '.claude NOT created');
 assert(!fs.existsSync(path.join(singleDir, '.github')), '.github NOT created');
-assert(!fs.existsSync(path.join(singleDir, '.agent')), '.agent NOT created');
+assert(!fs.existsSync(path.join(singleDir, '.agents')), '.agents NOT created');
 
 // ── Test 5: Malformed frontmatter fails clearly ──────────────────────
 
