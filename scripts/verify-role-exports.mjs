@@ -45,8 +45,8 @@ function testRenderers() {
   assert(claude.includes('disable-model-invocation: true'), 'claude render has frontmatter');
 
   const copilot = render('copilot', be);
-  assert(copilot.includes('.prompt.md') === false, 'copilot render is content not filename');
-  assert(copilot.includes('agent: agent'), 'copilot render has agent field');
+  assert(copilot.includes('name: celestial-backend'), 'copilot SKILL has name field');
+  assert(copilot.includes('Backend Developer persona'), 'copilot SKILL has descriptive description');
 }
 
 function testExportGlobalTemp() {

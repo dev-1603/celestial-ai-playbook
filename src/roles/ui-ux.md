@@ -18,7 +18,7 @@ targets:
     type: command
   copilot:
     enabled: true
-    type: prompt
+    type: skill
   antigravity:
     enabled: true
     type: skill

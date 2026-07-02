@@ -23,9 +23,12 @@ export function getGlobalPaths(homeDir) {
       commands: path.join(homeDir, '.claude', 'commands'),
       context: path.join(celestialRoot, 'claude', 'CLAUDE.md'),
     },
+    // Copilot (VS Code) discovers user-profile agent skills under ~/.copilot/skills
+    // (default in chat.agentSkillsLocations) and user instructions under
+    // ~/.copilot/instructions. Roles export as Skills; rules as an instructions file.
     copilot: {
-      prompts: path.join(homeDir, '.github', 'prompts'),
-      instructions: path.join(celestialRoot, 'copilot', 'copilot-instructions.md'),
+      instructions: path.join(homeDir, '.copilot', 'instructions', 'celestial-playbook.instructions.md'),
+      skills: path.join(homeDir, '.copilot', 'skills'),
     },
     // Antigravity discovers global customizations under ~/.gemini/config/.
     // Rules append to config/AGENTS.md; roles/personas are Skills, each a
@@ -52,7 +55,7 @@ export function resolveRoleOutputDir(target, opts = {}) {
     switch (target) {
       case 'cursor': return paths.cursor.commands;
       case 'claude': return paths.claude.commands;
-      case 'copilot': return paths.copilot.prompts;
+      case 'copilot': return paths.copilot.skills;
       case 'antigravity': return paths.antigravity.skills;
       default: throw new Error(`Unknown target: ${target}`);
     }
@@ -61,7 +64,7 @@ export function resolveRoleOutputDir(target, opts = {}) {
   switch (target) {
     case 'cursor': return path.join(projectDir, '.cursor', 'commands');
     case 'claude': return path.join(projectDir, '.claude', 'commands');
-    case 'copilot': return path.join(projectDir, '.github', 'prompts');
+    case 'copilot': return path.join(projectDir, '.github', 'skills');
     case 'antigravity': return path.join(projectDir, '.agents', 'skills');
     default: throw new Error(`Unknown target: ${target}`);
   }

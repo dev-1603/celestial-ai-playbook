@@ -53,9 +53,8 @@ function resolveTargets(requested) {
 }
 
 function artifactFilename(target, role) {
-  if (target === 'copilot') return `${role.command}.prompt.md`;
-  // Antigravity personas are Skills: <command>/SKILL.md
-  if (target === 'antigravity') return path.join(role.command, 'SKILL.md');
+  // Copilot & Antigravity personas are Skills: <command>/SKILL.md
+  if (target === 'copilot' || target === 'antigravity') return path.join(role.command, 'SKILL.md');
   return `${role.command}.md`;
 }
 
@@ -86,27 +85,11 @@ function renderClaude(role) {
   ].join('\n');
 }
 
-function renderCopilot(role) {
-  return [
-    '---',
-    `description: ${JSON.stringify(role.description)}`,
-    `name: ${role.command}`,
-    'agent: agent',
-    '---',
-    '',
-    `# ${role.title}`,
-    '',
-    instructionIntro(role),
-    '',
-    '---',
-    '',
-    role.body,
-    '',
-    GENERATED_NOTICE,
-  ].join('\n');
-}
-
-function renderAntigravity(role) {
+/**
+ * Skill (SKILL.md) renderer shared by Copilot and Antigravity.
+ * Requires name + a highly descriptive description for trigger-matching.
+ */
+function renderSkill(role) {
   const skillDescription =
     `${role.title} persona. ${role.description}. ` +
     `Trigger when the task involves ${role.title.toLowerCase()} responsibilities.`;
@@ -132,8 +115,8 @@ export function render(target, role) {
   switch (target) {
     case 'cursor': return renderCursor(role);
     case 'claude': return renderClaude(role);
-    case 'copilot': return renderCopilot(role);
-    case 'antigravity': return renderAntigravity(role);
+    case 'copilot': return renderSkill(role);
+    case 'antigravity': return renderSkill(role);
     default: throw new Error(`No renderer for target: ${target}`);
   }
 }

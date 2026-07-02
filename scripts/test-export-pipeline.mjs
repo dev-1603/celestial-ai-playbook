@@ -58,7 +58,7 @@ assert(pr.description === 'Rigorous code review enforcing security isolation per
   `pr-reviewer description from frontmatter`);
 assert(pr.command === 'celestial-review-pr', `pr-reviewer command: ${pr.command}`);
 assert(pr.targets.cursor.type === 'command', `pr-reviewer cursor type from frontmatter: "${pr.targets.cursor.type}"`);
-assert(pr.targets.copilot.type === 'prompt', `pr-reviewer copilot type from frontmatter: "${pr.targets.copilot.type}"`);
+assert(pr.targets.copilot.type === 'skill', `pr-reviewer copilot type from frontmatter: "${pr.targets.copilot.type}"`);
 assert(pr.targets.antigravity.type === 'skill', `pr-reviewer antigravity type from frontmatter: "${pr.targets.antigravity.type}"`);
 
 // backend has frontmatter
@@ -69,7 +69,7 @@ assert(be.name === 'backend', `backend name: "${be.name}"`);
 assert(be.command === 'celestial-backend', `backend command: "${be.command}"`);
 assert(be.scope === 'global', `backend scope: "${be.scope}"`);
 assert(be.targets.cursor.enabled === true, 'backend cursor.enabled: true');
-assert(be.targets.copilot.type === 'prompt', `backend copilot.type: "${be.targets.copilot.type}"`);
+assert(be.targets.copilot.type === 'skill', `backend copilot.type: "${be.targets.copilot.type}"`);
 assert(be.description.length > 0, `backend description: "${be.description}"`);
 assert(be.body.includes('## Priorities'), 'backend body is heuristic format');
 
@@ -90,8 +90,8 @@ assert(claudeOut.includes('disable-model-invocation: true'), 'Claude output has 
 assert(claudeOut.includes('description: "Rigorous code review'), 'Claude output has description in frontmatter');
 
 const copilotOut = render('copilot', pr);
-assert(copilotOut.includes('name: celestial-review-pr'), 'Copilot output has name field');
-assert(copilotOut.includes('agent: agent'), 'Copilot output has agent field');
+assert(copilotOut.includes('name: celestial-review-pr'), 'Copilot SKILL has name field');
+assert(copilotOut.includes('description:') && copilotOut.includes('PR Reviewer persona'), 'Copilot SKILL has descriptive description for trigger-matching');
 
 const antiOut = render('antigravity', pr);
 assert(antiOut.includes('name: celestial-review-pr'), 'Antigravity SKILL has name field');
@@ -110,7 +110,7 @@ const { exportTarget } = await import('./export-roles.mjs');
 const expectedPaths = {
   cursor:      ['.cursor', 'commands'],
   claude:      ['.claude', 'commands'],
-  copilot:     ['.github', 'prompts'],
+  copilot:     ['.github', 'skills'],
   antigravity: ['.agents', 'skills'],
 };
 
